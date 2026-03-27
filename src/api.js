@@ -8,14 +8,21 @@ const BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 async function req(method, path, body) {
   const tg = window?.Telegram?.WebApp
   const token = tg?.initData || ''
+
+  const headers = {
+    'X-Telegram-Init-Data': token,
+  }
+
+  if (body !== undefined && body !== null) {
+    headers['Content-Type'] = 'application/json'
+  }
+
   const res = await fetch(`${BASE}${path}`, {
     method,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Telegram-Init-Data': token,
-    },
-    body: body ? JSON.stringify(body) : undefined,
+    headers,
+    body: body !== undefined && body !== null ? JSON.stringify(body) : undefined,
   })
+
   if (!res.ok) throw new Error(`API ${method} ${path} → ${res.status}`)
   return res.json()
 }

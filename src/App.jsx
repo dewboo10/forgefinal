@@ -1660,7 +1660,8 @@ export default function App(){
   useEffect(()=>{
     async function init(){
       try{
-        const user=await api.auth.login();
+        const loginResult = await api.auth.login();
+        const user = loginResult.user;
         setBalance(user.balance||0);
         setTotal(user.totalMined||0);
         const rawUpg=user.upgrades||{};
@@ -1729,7 +1730,7 @@ export default function App(){
 
   // Fetch notifications on load and when panel opens
   useEffect(()=>{
-    api.notifications?.getAll().then(setNotifs).catch(()=>{});
+    api.notifications?.getAll().then(result => setNotifs(result.notifications || [])).catch(()=>{});
   },[notifOpen]);
 
   // Cooling warning — show if user hasn't mined in 20+ hours
