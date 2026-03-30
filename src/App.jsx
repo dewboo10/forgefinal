@@ -1660,24 +1660,24 @@ export default function App(){
   useEffect(()=>{
     async function init(){
       try{
-        const loginResult = await api.auth.login()
+        // const loginResult = await api.auth.login()
 // Don't read balance from login — fetch mining state instead
-const state = await api.mining.getState()
-setBalance(state.balance)
-setTotal(state.totalMined)
-const rawUpg = state.upgrades || {}
-const normUpg = {}
-Object.entries(rawUpg).forEach(([k,v]) => { normUpg[Number(k)]=v; normUpg[String(k)]=v })
-setUpgrades(normUpg)
-if (state.isMining) setMining(true)
-        // const loginResult = await api.auth.login();
-        // const user = loginResult.user;
-        // setBalance(user.balance||0);
-        // setTotal(user.totalMined||0);
-        // const rawUpg=user.upgrades||{};
-        // const normUpg={};
-        // Object.entries(rawUpg).forEach(([k,v])=>{normUpg[Number(k)]=v;normUpg[String(k)]=v;});
-        // setUpgrades(normUpg);
+// const state = await api.mining.getState()
+// setBalance(state.balance)
+// setTotal(state.totalMined)
+// const rawUpg = state.upgrades || {}
+// const normUpg = {}
+// Object.entries(rawUpg).forEach(([k,v]) => { normUpg[Number(k)]=v; normUpg[String(k)]=v })
+// setUpgrades(normUpg)
+// if (state.isMining) setMining(true)
+        const loginResult = await api.auth.login();
+        const user = loginResult.user;
+        setBalance(user.balance||0);
+        setTotal(user.totalMined||0);
+        const rawUpg=user.upgrades||{};
+        const normUpg={};
+        Object.entries(rawUpg).forEach(([k,v])=>{normUpg[Number(k)]=v;normUpg[String(k)]=v;});
+        setUpgrades(normUpg);
         // Get accurate purchased state from store (handles expiry correctly)
         try{
           const storeData=await api.store.getPurchased();
