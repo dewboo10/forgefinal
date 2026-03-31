@@ -1964,8 +1964,12 @@ export default function App(){
     if(tab==='mine'&&apiLoaded){
       api.mining.getState().then(s=>{
         // Sync authoritative server balance (prevents drift from local ticker)
-        if(typeof s.balance === 'number') setBalance(s.balance);
-        if(typeof s.totalMined === 'number') setTotal(s.totalMined);
+        if(typeof s.balance === 'number'){
+        setBalance(b => Math.max(b, s.balance))
+      }
+        if(typeof s.totalMined === 'number')  {
+        setTotal(t => Math.max(t, s.totalMined))
+      }
         const rawUpg2=s.upgrades||{};
         const normUpg2={};
         Object.entries(rawUpg2).forEach(([k,v])=>{normUpg2[Number(k)]=v;normUpg2[String(k)]=v;});
