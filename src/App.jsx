@@ -1704,7 +1704,15 @@ export default function App(){
           const dailyData = await api.profile.getDailyReward();
           setStreak(dailyData.streak||0);
         }catch(e){}
-        if(user.miningStartedAt) setMining(true);
+        if(user.miningStartedAt) {
+  setMining(true);
+  const secondsPending = Math.floor(
+    (Date.now() - new Date(user.miningStartedAt).getTime()) / 1000
+  );
+  const pendingEarned = 0.1 * secondsPending; // base rate
+  setBalance(b => b + pendingEarned);
+  setTotal(t => t + pendingEarned);
+}
         // Claim offline earnings if auto-mine active
         if((user.purchased||[]).some(p=>p.includes('auto'))){
           try{
