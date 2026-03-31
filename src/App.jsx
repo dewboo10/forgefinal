@@ -5,6 +5,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useTonConnectUI, useTonAddress } from "@tonconnect/ui-react";
 import * as api from "./api.js";
 import "./App.css";
+import  Preloader  from './Preloader.jsx'
 
 const REF_TIERS = [
   { refs:1,   icon:"🎁", label:"First Blood",      color:"#5ec98a", bg:"rgba(94,201,138,.1)",  border:"rgba(94,201,138,.22)",  reward:"3× Speed · 24H",       rewardType:"speed",    desc:"Your first recruit earns you a 24h burst",           subReward:"+5,000 FRG bonus" },
@@ -2014,6 +2015,8 @@ export default function App(){
   },[tab]);
 
   const toggle=async()=>{
+    // Prevent toggling if API isn't loaded yet (avoids errors if user clicks too fast)
+      if (!apiLoaded) return 
     if(!mining){
       setMining(true);setSessT(0);setSessE(0);
       // Track last active time for cooling mechanic
@@ -2118,6 +2121,7 @@ export default function App(){
   return (
     <>
 
+    <Preloader visible={!apiLoaded} />
       <div className="bg-glow"/>
       {particles.map(p=><div key={p.id} className="ptcl" style={{left:p.x,top:p.y}}>{p.label}</div>)}
       {toast&&<div className="toast"><span className="t-icon">{toast.icon}</span><div className="t-txt"><strong>{toast.title}</strong>{toast.sub}</div></div>}
