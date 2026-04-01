@@ -1661,75 +1661,89 @@ export default function App(){
   },[userFriendlyAddress]);
 
   // ── On mount: auth + load state from backend ──────────────
-  useEffect(() => {
-    async function init() {
-      try {
+  useEffect(()=>{
+    async function init(){
+      try{
         const loginResult = await api.auth.login();
         const user = loginResult.user;
-        setSimRefs(user.referralCount || 0);
-        if (user.referralCode) setRefCode(user.referralCode);
-        // Load real referral earnings on init
-        try {
-          const refInfo = await api.referrals.getInfo();
-          setSimRefs(refInfo.ref_count || refInfo.referralCount || 0);
-          if (refInfo.ref_code || refInfo.referralCode) setRefCode(refInfo.ref_code || refInfo.referralCode);
-          if (typeof refInfo.referral_earnings === 'number') setReferralEarnings(refInfo.referral_earnings);
-        } catch (e) {}
-        // Load real daily streak from server
-        try {
-          const dailyData = await api.profile.getDailyReward();
-          setStreak(dailyData.streak || 0);
-        } catch (e) {}
-        // Get accurate purchased state from store (handles expiry correctly)
-        try {
-          const storeData = await api.store.getPurchased();
-          const map = {};
-          (storeData.purchased || []).forEach(id => { map[id] = true; });
-          (user.purchased || []).forEach(id => { map[id] = true; });
-          setPurch(map);
-        } catch (e) {
-          setPurch(Object.fromEntries((user.purchased || []).map(k => [k, true])));
-        }
-        setApiLoaded(true);
-      } catch (e) {
-        console.error('Init error:', e);
-        setApiLoaded(true);
-      }
-      // Check wallet bonus status from server (source of truth, overrides localStorage)
-      try {
-        const walletData = await api.wallet.getWallet();
-        if (walletData.bonusClaimed) {
-          setWalletBonusClaimed(true);
-          localStorage.setItem('forge_wallet_bonus', '1');
-        }
-      } catch (e) {}
-      // Fetch real total users for halving display
-      try {
-        const statsData = await api.stats.getTotalUsers();
-        if (typeof statsData.total_users === 'number') setTotalUsers(statsData.total_users);
-      } catch (e) {}
-    }
-    init();
-  }, []);
-
-  // Always fetch mining state from backend on tab change (not just 'mine')
-  useEffect(() => {
-    if (!apiLoaded) return;
-    async function fetchMiningState() {
-      try {
+        // Fetch mining state for accurate balance, totalMined, blocks
         const state = await api.mining.getState();
-        if (typeof state.balance === 'number') setBalance(state.balance);
-        if (typeof state.totalMined === 'number') setTotal(state.totalMined);
-        if (typeof state.blocks_found === 'number') setBlocks(state.blocks_found);
+        setBalance(state.balance || 0);
+        setTotal(state.totalMined || 0);
+        setBlocks(state.blocks_found || 0);
         const rawUpg = state.upgrades || {};
         const normUpg = {};
-        Object.entries(rawUpg).forEach(([k, v]) => { normUpg[Number(k)] = v; normUpg[String(k)] = v; });
+        Object.entries(rawUpg).forEach(([k,v]) => { normUpg[Number(k)]=v; normUpg[String(k)]=v; });
         setUpgrades(normUpg);
-        setMining(!!state.mining);
-      } catch (e) {}
+        if (state.mining) setMining(true);
+        // Get accurate purchased state from store (handles expiry correctly)
+        try{
+          const storeData=await api.store.getPurchased();
+          const map={};
+          (storeData.purchased||[]).forEach(id=>{map[id]=true;});
+          // Also include permanent items from user.purchased (speed_perm etc)
+          (user.purchased||[]).forEach(id=>{map[id]=true;});
+          setPurch(map);
+        }catch(e){
+          // Fallback to auth data
+          setPurch(Object.fromEntries((user.purchased||[]).map(k=>[k,true])));
+        }
+        setSimRefs(user.referralCount||0);
+        if(user.referralCode) setRefCode(user.referralCode);
+        // Load real referral earnings on init
+        try{
+          const refInfo = await api.referrals.getInfo();
+          setSimRefs(refInfo.ref_count||refInfo.referralCount||0);
+          if(refInfo.ref_code||refInfo.referralCode) setRefCode(refInfo.ref_code||refInfo.referralCode);
+          if(typeof refInfo.referral_earnings==='number') setReferralEarnings(refInfo.referral_earnings);
+        }catch(e){}
+        // Load real daily streak from server
+        try{
+          const dailyData = await api.profile.getDailyReward();
+          setStreak(dailyData.streak||0);
+        }catch(e){}
+        if(user.miningStartedAt) {
+  setMining(true);
+  const secondsPending = Math.floor(
+    (Date.now() - new Date(user.miningStartedAt).getTime()) / 1000
+  );
+  const pendingEarned = 0.1 * secondsPending; // base rate
+  setBalance(b => b + pendingEarned);
+  setTotal(t => t + pendingEarned);
+}
+        // Claim offline earnings if auto-mine active
+        if((user.purchased||[]).some(p=>p.includes('auto'))){
+          try{
+            const offline=await api.mining.claimOffline();
+            if(offline.earned>0){
+              setBalance(b=>b+offline.earned);
+              setTotal(t=>t+offline.earned);
+              if(typeof offline.blocks_found === 'number') setBlocks(b => b + (offline.blocks_found - b)); // adjust for any blocks found
+              showToast('🤖','Auto-Mine Earnings',`+${fmt(offline.earned)} FRG while offline`);
+            }
+          }catch(e){}
+        }
+        setApiLoaded(true);
+      }catch(e){
+        console.error('Init error:',e);
+        setApiLoaded(true); // still show UI in dev mode
+      }
+      // Check wallet bonus status from server (source of truth, overrides localStorage)
+      try{
+        const walletData = await api.wallet.getWallet();
+        if(walletData.bonusClaimed){
+          setWalletBonusClaimed(true);
+          localStorage.setItem('forge_wallet_bonus','1');
+        }
+      }catch(e){}
+      // Fetch real total users for halving display
+      try{
+        const statsData = await api.stats.getTotalUsers();
+        if(typeof statsData.total_users==='number') setTotalUsers(statsData.total_users);
+      }catch(e){}
     }
-    fetchMiningState();
-  }, [tab, apiLoaded]);
+    init();
+  },[]);
 
   // Fetch notifications on load and when panel opens
   useEffect(()=>{
