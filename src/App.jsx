@@ -1664,24 +1664,18 @@ export default function App(){
   useEffect(()=>{
     async function init(){
       try{
-        // const loginResult = await api.auth.login()
-// Don't read balance from login — fetch mining state instead
-// const state = await api.mining.getState()
-// setBalance(state.balance)
-// setTotal(state.totalMined)
-// const rawUpg = state.upgrades || {}
-// const normUpg = {}
-// Object.entries(rawUpg).forEach(([k,v]) => { normUpg[Number(k)]=v; normUpg[String(k)]=v })
-// setUpgrades(normUpg)
-// if (state.isMining) setMining(true)
         const loginResult = await api.auth.login();
         const user = loginResult.user;
-        setBalance(user.balance||0);
-        setTotal(user.totalMined||0);
-        const rawUpg=user.upgrades||{};
-        const normUpg={};
-        Object.entries(rawUpg).forEach(([k,v])=>{normUpg[Number(k)]=v;normUpg[String(k)]=v;});
+        // Fetch mining state for accurate balance, totalMined, blocks
+        const state = await api.mining.getState();
+        setBalance(state.balance || 0);
+        setTotal(state.totalMined || 0);
+        setBlocks(state.blocks_found || 0);
+        const rawUpg = state.upgrades || {};
+        const normUpg = {};
+        Object.entries(rawUpg).forEach(([k,v]) => { normUpg[Number(k)]=v; normUpg[String(k)]=v; });
         setUpgrades(normUpg);
+        if (state.mining) setMining(true);
         // Get accurate purchased state from store (handles expiry correctly)
         try{
           const storeData=await api.store.getPurchased();
@@ -1724,6 +1718,7 @@ export default function App(){
             if(offline.earned>0){
               setBalance(b=>b+offline.earned);
               setTotal(t=>t+offline.earned);
+              if(typeof offline.blocks_found === 'number') setBlocks(b => b + (offline.blocks_found - b)); // adjust for any blocks found
               showToast('🤖','Auto-Mine Earnings',`+${fmt(offline.earned)} FRG while offline`);
             }
           }catch(e){}
@@ -1968,12 +1963,9 @@ export default function App(){
     if(tab==='mine'&&apiLoaded){
       api.mining.getState().then(s=>{
         // Sync authoritative server balance (prevents drift from local ticker)
-        if(typeof s.balance === 'number'){
-        setBalance(b => Math.max(b, s.balance))
-      }
-        if(typeof s.totalMined === 'number')  {
-        setTotal(t => Math.max(t, s.totalMined))
-      }
+        if(typeof s.balance === 'number') setBalance(s.balance);
+        if(typeof s.totalMined === 'number') setTotal(s.totalMined);
+        if(typeof s.blocks_found === 'number') setBlocks(s.blocks_found);
         const rawUpg2=s.upgrades||{};
         const normUpg2={};
         Object.entries(rawUpg2).forEach(([k,v])=>{normUpg2[Number(k)]=v;normUpg2[String(k)]=v;});
@@ -2038,6 +2030,7 @@ export default function App(){
         if(res.earned>0){
           if(typeof res.balance==='number') setBalance(res.balance);
           if(typeof res.total_mined==='number') setTotal(res.total_mined);
+          if(typeof res.blocks_found==='number') setBlocks(res.blocks_found);
         }
       }catch(e){ console.error('Stop error:',e); }
     }
