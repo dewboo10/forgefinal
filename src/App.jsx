@@ -6,6 +6,7 @@ import { useTonConnectUI, useTonAddress } from "@tonconnect/ui-react";
 import * as api from "./api.js";
 import "./App.css";
 import  Preloader  from './Preloader.jsx'
+import Onboarding, { useOnboarding } from './Onboarding.jsx'
 
 const REF_TIERS = [
   { refs:1,   icon:"🎁", label:"First Blood",      color:"#5ec98a", bg:"rgba(94,201,138,.1)",  border:"rgba(94,201,138,.22)",  reward:"3× Speed · 24H",       rewardType:"speed",    desc:"Your first recruit earns you a 24h burst",           subReward:"+5,000 FRG bonus" },
@@ -1564,6 +1565,8 @@ function NodeExpandable({t,r,g,b,mining,effectiveRate,hasAutoMine,purchased,upgr
 }
 /* ═══ MAIN APP ═══ */
 export default function App(){
+  const { showOnboarding, onboardingDone } = useOnboarding()  // ← new state to control onboarding flow
+  
   const [tab,setTab]=useState('mine');
   const [balance,setBalance]=useState(0);
   const [mining,setMining]=useState(false);
@@ -2120,8 +2123,9 @@ export default function App(){
 
   return (
     <>
-
     <Preloader visible={!apiLoaded} />
+    {showOnboarding && <Onboarding onDone={onboardingDone} />}
+
       <div className="bg-glow"/>
       {particles.map(p=><div key={p.id} className="ptcl" style={{left:p.x,top:p.y}}>{p.label}</div>)}
       {toast&&<div className="toast"><span className="t-icon">{toast.icon}</span><div className="t-txt"><strong>{toast.title}</strong>{toast.sub}</div></div>}
