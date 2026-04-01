@@ -1578,6 +1578,7 @@ export default function App(){
   const [referralCount]=useState(2);
   const [referralEarnings,setReferralEarnings]=useState(0);
   const [missionPoints,setMP]=useState(0);
+  const [pendingEarnings, setPendingEarnings] = useState(0);
   const [claimedCPs,setCC]=useState({});
   const [purchased,setPurch]=useState({});
   const [particles,setPart]=useState([]);
@@ -1616,6 +1617,7 @@ export default function App(){
   const pid=useRef(0);
   const mineR=useRef(null),sesR=useRef(null),boostR=useRef(null);
   const circleRef=useRef(null);
+  const miningStartTime=useRef(null);
   const prevBal=useRef(0),prevBlocks=useRef(0),prevMining=useRef(false);
 
   const showToast=useCallback((icon,title,sub)=>{setToast({icon,title,sub});setTimeout(()=>setToast(null),3200);},[])
@@ -1703,14 +1705,10 @@ export default function App(){
           setStreak(dailyData.streak||0);
         }catch(e){}
         if(user.miningStartedAt) {
-  setMining(true);
-  const secondsPending = Math.floor(
-    (Date.now() - new Date(user.miningStartedAt).getTime()) / 1000
-  );
-  const pendingEarned = 0.1 * secondsPending; // base rate
-  setBalance(b => b + pendingEarned);
-  setTotal(t => t + pendingEarned);
-}
+          setMining(true);
+          miningStartTime.current = new Date(user.miningStartedAt).getTime();
+          // Pending earnings calculated from start time
+        }
         // Claim offline earnings if auto-mine active
         if((user.purchased||[]).some(p=>p.includes('auto'))){
           try{
@@ -1893,18 +1891,34 @@ export default function App(){
   useEffect(()=>{
     if(!mining)return;
     mineR.current=setInterval(()=>{
-      const earn=effectiveRateRef.current/10;
-      setBalance(b=>b+earn); setSessE(s=>s+earn); setTotal(t=>t+earn);
+      // Removed local earnings additions to prevent desync
+      // Earnings now only applied from backend on heartbeat/stop
       if(Math.random()<0.016){
-        const bonus=effectiveRateRef.current*12;
-        setBalance(b=>b+bonus); setSessE(s=>s+bonus);
-        setBlocks(b=>b+1);
-        addParticle({x:window.innerWidth*.4+Math.random()*window.innerWidth*.2,y:window.innerHeight*.35,label:`+${fmt(bonus)}`});
+        // Bonus blocks now handled by backend
+        addParticle({x:window.innerWidth*.4+Math.random()*window.innerWidth*.2,y:window.innerHeight*.35,label:`+BLOCK`});
       }
     },100);
     sesR.current=setInterval(()=>setSessT(t=>t+1),1000);
     return()=>{clearInterval(mineR.current);clearInterval(sesR.current);};
   },[mining]); // only restarts when mining toggle changes, NOT on every rate/balance update
+
+  // Calculate pending earnings for display
+  useEffect(() => {
+    if (!mining) {
+      setPendingEarnings(0);
+      return;
+    }
+    const interval = setInterval(() => {
+      // This is for display only, not added to balance
+      const now = Date.now();
+      const start = miningStartTime.current;
+      if (start) {
+        const seconds = (now - start) / 1000;
+        setPendingEarnings(effectiveRateRef.current * seconds);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [mining, effectiveRate]);
 
   // Balance tick animation
   useEffect(()=>{
@@ -2009,11 +2023,36 @@ export default function App(){
     }
   },[tab]);
 
+  // Refresh mining state on tab change to prevent desync
+  useEffect(() => {
+    async function refreshMiningState() {
+      try {
+        const state = await api.mining.getState();
+        setBalance(state.balance || 0);
+        setTotal(state.totalMined || 0);
+        setBlocks(state.blocks_found || 0);
+        const rawUpg = state.upgrades || {};
+        const normUpg = {};
+        Object.entries(rawUpg).forEach(([k,v]) => { normUpg[Number(k)]=v; normUpg[String(k)]=v; });
+        setUpgrades(normUpg);
+        setMining(!!state.mining);
+        setPendingEarnings(0); // Reset pending on fresh fetch
+        if (state.mining) {
+          miningStartTime.current = Date.now(); // Reset start time for pending calc
+        }
+      } catch (e) {
+        // Optional: handle error, but don't block UI
+      }
+    }
+    refreshMiningState();
+  }, [tab]);
+
   const toggle=async()=>{
     // Prevent toggling if API isn't loaded yet (avoids errors if user clicks too fast)
       if (!apiLoaded) return 
     if(!mining){
       setMining(true);setSessT(0);setSessE(0);
+      miningStartTime.current = Date.now();
       // Track last active time for cooling mechanic
       const now=Date.now();
       setLastActiveAt(now);
@@ -2336,7 +2375,7 @@ export default function App(){
                     <line x1="100" y1="62" x2="100" y2="80" stroke="#fff" strokeWidth=".5"/>
                   </svg>
                   <div style={{fontSize:10,fontWeight:600,color:'rgba(255,255,255,.18)',letterSpacing:'.16em',textTransform:'uppercase',marginBottom:6}}>FRG Balance</div>
-                  <div className={`bal-amount${tick?' tick':''}`} style={{fontSize:'clamp(58px,15vw,76px)',fontWeight:700,color:'rgba(255,255,255,.88)',lineHeight:1,letterSpacing:'-.04em',marginBottom:8}}>{fmt(balance)}</div>
+                  <div className={`bal-amount${tick?' tick':''}`} style={{fontSize:'clamp(58px,15vw,76px)',fontWeight:700,color:'rgba(255,255,255,.88)',lineHeight:1,letterSpacing:'-.04em',marginBottom:8}}>{fmt(balance + (mining ? pendingEarnings : 0))}</div>
                   <div style={{height:22,display:'flex',alignItems:'center',justifyContent:'center'}}>
                     {mining
                       ?<div style={{display:'inline-flex',alignItems:'center',gap:5,padding:'4px 12px',borderRadius:100,background:'rgba(0,195,123,.07)',border:'1px solid rgba(0,195,123,.13)'}}>
