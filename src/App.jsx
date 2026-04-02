@@ -1704,6 +1704,19 @@ export default function App(){
           const dailyData = await api.profile.getDailyReward();
           setStreak(dailyData.streak||0);
         }catch(e){}
+        // Load claimed mission checkpoints from DB on every login
+        try{
+          const missionData = await api.missions.getAll();
+          const loadedClaims = {};
+          (missionData.missions || []).forEach(m => {
+            const s = new Set();
+            (m.checkpoints || []).forEach(cp => {
+              if(cp.claimed) s.add(cp.index);
+            });
+            if(s.size > 0) loadedClaims[m.id] = s;
+          });
+          setCC(loadedClaims);
+        }catch(e){}
         if(user.miningStartedAt) {
           setMining(true);
           miningStartTime.current = new Date(user.miningStartedAt).getTime();
@@ -2034,6 +2047,19 @@ export default function App(){
       // Load real friends list
       api.referrals.getList().then(data=>{
         if(data?.refs) setRefList(data.refs);
+      }).catch(()=>{});
+    }
+    if(tab==='missions'){
+      api.missions.getAll().then(data=>{
+        const loadedClaims = {};
+        (data.missions || []).forEach(m => {
+          const s = new Set();
+          (m.checkpoints || []).forEach(cp => {
+            if(cp.claimed) s.add(cp.index);
+          });
+          if(s.size > 0) loadedClaims[m.id] = s;
+        });
+        setCC(loadedClaims);
       }).catch(()=>{});
     }
     if(tab==='store'){
@@ -3589,7 +3615,40 @@ export default function App(){
                     <span style={{fontSize:16,fontWeight:800,color:'#fff'}}>{fmt(totalMined+(hasAutoMine?Math.floor(totalMined*.3):0)+(referralEarnings||simRefs*1240)+missionPoints)} FRG</span>
                   </div>
                 </div>
-
+{/* Mission Claims History */}
+                <div style={{padding:'14px 20px',borderBottom:'1px solid rgba(255,255,255,.05)'}}>
+                  <div style={{fontSize:9,fontWeight:600,color:'rgba(255,255,255,.18)',letterSpacing:'.12em',textTransform:'uppercase',marginBottom:10}}>Mission Progress</div>
+                  {[
+                    {id:'m1',icon:'⛏',name:'The Miner',    color:'#e8b84b', checkpoints:[{at:1000,r:500,l:'1K'},{at:5000,r:1500,l:'5K'},{at:20000,r:5000,l:'20K'},{at:100000,r:20000,l:'100K'},{at:500000,r:80000,l:'500K'}], progress:totalMined},
+                    {id:'m2',icon:'⬡',name:'Block Hunter', color:'#c07cf0', checkpoints:[{at:1,r:500,l:'1'},{at:5,r:2500,l:'5'},{at:20,r:8000,l:'20'},{at:50,r:20000,l:'50'}],                         progress:blocks},
+                    {id:'m3',icon:'👥',name:'Recruiter',    color:'#e06c4c', checkpoints:[{at:1,r:5000,l:'1'},{at:5,r:30000,l:'5'},{at:10,r:100000,l:'10'},{at:25,r:500000,l:'25'}],                    progress:simRefs},
+                    {id:'m4',icon:'⚡',name:'Speed Demon',  color:'#5ba8e8', checkpoints:[{at:1,r:500,l:'1/s'},{at:5,r:3000,l:'5/s'},{at:20,r:12000,l:'20/s'},{at:50,r:30000,l:'50/s'}],               progress:effectiveRate},
+                  ].map(m=>{
+                    const claimedSet = new Set(claimedCPs[m.id]||[]);
+                    const totalReward = m.checkpoints.filter((_,i)=>claimedSet.has(i)).reduce((a,cp)=>a+cp.r,0);
+                    return(
+                      <div key={m.id} style={{marginBottom:10,padding:'10px 12px',background:'rgba(255,255,255,.02)',borderRadius:8,border:'1px solid rgba(255,255,255,.05)'}}>
+                        <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:8}}>
+                          <span style={{fontSize:14}}>{m.icon}</span>
+                          <span style={{fontSize:12,fontWeight:700,color:'#fff',flex:1}}>{m.name}</span>
+                          {claimedSet.size>0&&<span style={{fontSize:9,fontWeight:700,color:m.color,background:`${m.color}15`,padding:'1px 6px',borderRadius:3}}>+{fmt(totalReward)} FRG</span>}
+                        </div>
+                        <div style={{display:'flex',gap:4}}>
+                          {m.checkpoints.map((cp,i)=>{
+                            const claimed = claimedSet.has(i);
+                            const reachable = m.progress >= cp.at;
+                            return(
+                              <div key={i} style={{flex:1,textAlign:'center',padding:'4px 2px',borderRadius:5,background:claimed?`${m.color}18`:reachable?'rgba(255,255,255,.05)':'rgba(255,255,255,.02)',border:`1px solid ${claimed?m.color+'40':reachable?'rgba(255,255,255,.08)':'rgba(255,255,255,.04)'}`}}>
+                                <div style={{fontSize:8,fontWeight:700,color:claimed?m.color:reachable?'rgba(255,255,255,.4)':'rgba(255,255,255,.15)'}}>{cp.l}</div>
+                                <div style={{fontSize:9,color:claimed?m.color:'rgba(255,255,255,.2)',marginTop:1}}>{claimed?'✓':fmt(cp.r)}</div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
                 {/* Stats grid */}
                 <div style={{padding:'14px 20px',borderBottom:'1px solid rgba(255,255,255,.05)'}}>
                   <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
