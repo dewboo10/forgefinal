@@ -1673,7 +1673,7 @@ export default function App(){
         setBalance(state.balance || 0);
         setTotal(state.totalMined || 0);
         setBlocks(state.blocks_found || 0);
-        const rawUpg = state.upgrades || {};
+         const rawUpg = state.upgrades || state.upgrade_levels || {};
         const normUpg = {};
         Object.entries(rawUpg).forEach(([k,v]) => { normUpg[Number(k)]=v; normUpg[String(k)]=v; });
         setUpgrades(normUpg);
@@ -1860,11 +1860,35 @@ export default function App(){
 
 
   // ── Heartbeat: ping backend every 20s while mining ────────
+  // useEffect(()=>{
+  //   if(!mining) return;
+  //   const hb = setInterval(()=>{ api.mining.heartbeat().catch(()=>{}); }, 20000);
+  //   return ()=>clearInterval(hb);
+  // },[mining]);
+
+
+
   useEffect(()=>{
     if(!mining) return;
-    const hb = setInterval(()=>{ api.mining.heartbeat().catch(()=>{}); }, 20000);
+    const hb = setInterval(async ()=>{
+      try{
+        const res = await api.mining.heartbeat();
+        // Backend credited earnings and reset mining_start to NOW.
+        // Sync balance and reset our local timer so pendingEarnings
+        // doesn't double-count what the server already banked.
+        if(typeof res.balance === 'number'){
+          setBalance(res.balance);
+          miningStartTime.current = Date.now(); // reset pending counter
+        }
+        if(typeof res.total_mined === 'number') setTotal(res.total_mined);
+        if(typeof res.blocks_found === 'number') setBlocks(res.blocks_found);
+      }catch(e){
+        // silent — never crash on heartbeat failure
+      }
+    }, 20000);
     return ()=>clearInterval(hb);
-  },[mining]);
+  },[mining])
+
 
   // ── Stop mining when app closes / goes to background ──────
   useEffect(()=>{
@@ -2031,10 +2055,11 @@ export default function App(){
         setBalance(state.balance || 0);
         setTotal(state.totalMined || 0);
         setBlocks(state.blocks_found || 0);
-        const rawUpg = state.upgrades || {};
+        const rawUpg = state.upgrades || state.upgrade_levels || {};
         const normUpg = {};
         Object.entries(rawUpg).forEach(([k,v]) => { normUpg[Number(k)]=v; normUpg[String(k)]=v; });
         setUpgrades(normUpg);
+ 
         setMining(!!state.mining);
         setPendingEarnings(0); // Reset pending on fresh fetch
         if (state.mining) {
