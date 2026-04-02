@@ -2085,14 +2085,18 @@ export default function App(){
         const normUpg = {};
         Object.entries(rawUpg).forEach(([k,v]) => { normUpg[Number(k)]=v; normUpg[String(k)]=v; });
         setUpgrades(normUpg);
- 
         setMining(!!state.mining);
-        setPendingEarnings(0); // Reset pending on fresh fetch
-        if (state.mining) {
-          miningStartTime.current = Date.now(); // Reset start time for pending calc
+        if (state.mining && state.mining_start) {
+          // Use the REAL mining_start from DB, not Date.now()
+          // This means pendingEarnings counts correctly even after tab switches
+          miningStartTime.current = new Date(state.mining_start).getTime();
+          // Don't reset pendingEarnings — the interval will recalculate
+          // from the correct start time automatically
+        } else {
+          setPendingEarnings(0);
         }
       } catch (e) {
-        // Optional: handle error, but don't block UI
+        // don't block UI
       }
     }
     refreshMiningState();
@@ -3584,8 +3588,8 @@ export default function App(){
                     {simRefs>0&&<span style={{fontSize:9,padding:'2px 7px',borderRadius:4,background:'rgba(80,150,255,.08)',color:'#5096ff'}}>👥 {simRefs} REFS</span>}
                   </div>
                   <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:1}}>
-                    {[{v:fmt(totalMined),l:'Total Mined'},{v:effectiveRate.toFixed(3),l:'FRG/s'},{v:blocks,l:'Blocks'}].map((s,i)=>(
-                      <div key={i} style={{padding:'10px 6px',background:'rgba(255,255,255,.03)',borderRadius:i===0?'8px 0 0 8px':i===2?'0 8px 8px 0':'0'}}>
+                 {[{v:fmt(balance + (mining ? pendingEarnings : 0)),l:'Balance'},{v:effectiveRate.toFixed(3),l:'FRG/s'},{v:blocks,l:'Blocks'}].map((s,i)=>(
+                  <div key={i} style={{padding:'10px 6px',background:'rgba(255,255,255,.03)',borderRadius:i===0?'8px 0 0 8px':i===2?'0 8px 8px 0':'0'}}>
                         <div style={{fontSize:18,fontWeight:800,color:'#fff',lineHeight:1,marginBottom:2}}>{s.v}</div>
                         <div style={{fontSize:9,color:'rgba(255,255,255,.22)',fontWeight:500}}>{s.l}</div>
                       </div>
