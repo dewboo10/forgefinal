@@ -1568,17 +1568,20 @@ export default function App(){
   const { showOnboarding, onboardingDone } = useOnboarding()  // ← new state to control onboarding flow
   
   const [tab,setTab]=useState('mine');
-  const [balance,setBalance]=useState(0);
+  const [committed,setCommitted]=useState({
+    balance:0,
+    totalMined:0,
+    blocks:0,
+    sessionStart:null,
+  });
+  const { balance, totalMined, blocks, sessionStart } = committed;
   const [mining,setMining]=useState(false);
   const [upgrades,setUpgrades]=useState({});
   const [sessE,setSessE]=useState(0);
   const [sessT,setSessT]=useState(0);
-  const [totalMined,setTotal]=useState(0);
-  const [blocks,setBlocks]=useState(0);
   const [referralCount]=useState(2);
   const [referralEarnings,setReferralEarnings]=useState(0);
   const [missionPoints,setMP]=useState(0);
-  const [pendingEarnings, setPendingEarnings] = useState(0);
   const [claimedCPs,setCC]=useState({});
   const [purchased,setPurch]=useState({});
   const [particles,setPart]=useState([]);
@@ -1589,6 +1592,7 @@ export default function App(){
   const [surgeUsedAt,setSurgeUsedAt]=useState(null);  // 4h cooldown
   const [turboUsedAt,setTurboUsedAt]=useState(null);  // 6h cooldown
   const [now,setNow]=useState(Date.now());
+  const [nowMs,setNowMs]=useState(() => Date.now());
   const [activeBoost,setAB]=useState(null);
   const [netHash,setNetHash]=useState(912.4);
   const [showLegacy,setLegacy]=useState(false);
@@ -1617,7 +1621,6 @@ export default function App(){
   const pid=useRef(0);
   const mineR=useRef(null),sesR=useRef(null),boostR=useRef(null);
   const circleRef=useRef(null);
-  const miningStartTime=useRef(null);
   const prevBal=useRef(0),prevBlocks=useRef(0),prevMining=useRef(false);
 
   const showToast=useCallback((icon,title,sub)=>{setToast({icon,title,sub});setTimeout(()=>setToast(null),3200);},[])
@@ -1670,9 +1673,14 @@ export default function App(){
         const user = loginResult.user;
         // Fetch mining state for accurate balance, totalMined, blocks
         const state = await api.mining.getState();
-        setBalance(state.balance || 0);
-        setTotal(state.totalMined || 0);
-        setBlocks(state.blocks_found || 0);
+        setCommitted({
+          balance:      state.balance      || 0,
+          totalMined:   state.totalMined   || state.total_mined || 0,
+          blocks:       state.blocks_found || 0,
+          sessionStart: state.mining && state.mining_start
+                          ? new Date(state.mining_start).getTime()
+                          : null,
+        });
          const rawUpg = state.upgrades || state.upgrade_levels || {};
         const normUpg = {};
         Object.entries(rawUpg).forEach(([k,v]) => { normUpg[Number(k)]=v; normUpg[String(k)]=v; });
@@ -1719,7 +1727,7 @@ export default function App(){
         }catch(e){}
         if(user.miningStartedAt) {
           setMining(true);
-          miningStartTime.current = new Date(user.miningStartedAt).getTime();
+          setCommitted(c => ({ ...c, sessionStart: new Date(user.miningStartedAt).getTime() }));
           // Pending earnings calculated from start time
         }
         // Claim offline earnings if auto-mine active
@@ -1727,9 +1735,12 @@ export default function App(){
           try{
             const offline=await api.mining.claimOffline();
             if(offline.earned>0){
-              setBalance(b=>b+offline.earned);
-              setTotal(t=>t+offline.earned);
-              if(typeof offline.blocks_found === 'number') setBlocks(b => b + (offline.blocks_found - b)); // adjust for any blocks found
+              setCommitted(c => ({
+                ...c,
+                balance: c.balance + offline.earned,
+                totalMined: c.totalMined + offline.earned,
+                blocks: typeof offline.blocks_found === 'number' ? offline.blocks_found : c.blocks,
+              }));
               showToast('🤖','Auto-Mine Earnings',`+${fmt(offline.earned)} FRG while offline`);
             }
           }catch(e){}
@@ -1787,8 +1798,7 @@ export default function App(){
     if(userFriendlyAddress&&!walletBonusClaimed&&!walletBonusGranted.current){
       walletBonusGranted.current=true;
       // Grant bonus balance (frontend-side for now, backend wires this later)
-      setBalance(b=>b+10000);
-      setTotal(t=>t+10000);
+      setCommitted(c => ({ ...c, balance: c.balance + 10000, totalMined: c.totalMined + 10000 }));
       setWalletBonusClaimed(true);
       localStorage.setItem('forge_wallet_bonus','1');
       showToast('💎','Wallet Verified!','+10,000 FRG credited to your node');
@@ -1834,20 +1844,20 @@ export default function App(){
           addLog('info','🔥 Paid TURBO activated');
         } else if(item.type==='chest'){
           // Chest: FRG credited, not added to purchased
-          if(res.newBalance) setBalance(res.newBalance);
+          if(typeof res.newBalance==='number') setCommitted(c => ({ ...c, balance: res.newBalance }));
           showToast('📦',`+${res.frgCredited?.toLocaleString()||''} FRG`,`Head Start credited!`);
           addLog('info',`📦 ${item.name}: +${res.frgCredited} FRG`);
         } else if(res.expiresAt){
           // Expirable item (auto_7d, auto_30d, speed_3x etc)
           setPurch(p=>({...p,[item.id]:true}));
-          if(res.newBalance) setBalance(res.newBalance);
+          if(typeof res.newBalance==='number') setCommitted(c => ({ ...c, balance: res.newBalance }));
           const exp=new Date(res.expiresAt);
           showToast('✅',`${item.name} Active!`,`Expires ${exp.toLocaleDateString()}`);
           addLog('info',`💎 ${item.name} active until ${exp.toLocaleDateString()}`);
         } else {
           // Permanent item (speed_perm, auto_lifetime)
           setPurch(p=>({...p,[item.id]:true}));
-          if(res.newBalance) setBalance(res.newBalance);
+          if(typeof res.newBalance==='number') setCommitted(c => ({ ...c, balance: res.newBalance }));
           showToast('✅',`${item.name} Activated!`,`Paid ${item.priceTON} TON · permanent`);
           addLog('info',`💎 ${item.name}: permanent`);
         }
@@ -1866,13 +1876,17 @@ export default function App(){
   const upgradeRate=UPGRADES.reduce((acc,u)=>{const lv=upgrades[u.id]||upgrades[String(u.id)]||0;return acc+u.rateBonus*lv;},0);
   const permMult=purchased['speed_perm']?2:1;
   const effectiveRate=(baseRate+upgradeRate)*(activeBoost?.mult||1)*permMult;
-  // Single source of truth for displayed balance — always includes pending
-  const liveBalance = balance + (mining ? pendingEarnings : 0);
-  const liveTotalMined = totalMined + (mining ? pendingEarnings : 0);
+  const elapsedSecs = sessionStart ? Math.max(0,(nowMs-sessionStart)/1000) : 0;
+  const liveBalance = balance + (mining ? elapsedSecs * effectiveRate : 0);
+  const liveTotalMined = totalMined + (mining ? elapsedSecs * effectiveRate : 0);
   // Ref so mining interval always reads latest rate without restarting
   const effectiveRateRef=useRef(effectiveRate);
   useEffect(()=>{effectiveRateRef.current=effectiveRate;},[effectiveRate]);
 
+  useEffect(()=>{
+    const ticker=setInterval(()=>setNowMs(Date.now()),1000);
+    return()=>clearInterval(ticker);
+  },[]);
 
 
   // ── Heartbeat: ping backend every 20s while mining ────────
@@ -1889,15 +1903,14 @@ export default function App(){
     const hb = setInterval(async ()=>{
       try{
         const res = await api.mining.heartbeat();
-        // Backend credited earnings and reset mining_start to NOW.
-        // Sync balance and reset our local timer so pendingEarnings
-        // doesn't double-count what the server already banked.
         if(typeof res.balance === 'number'){
-          setBalance(res.balance);
-          miningStartTime.current = Date.now(); // reset pending counter
+          setCommitted(c => ({
+            balance:      res.balance,
+            totalMined:   typeof res.total_mined === 'number' ? res.total_mined : c.totalMined,
+            blocks:       typeof res.blocks_found === 'number' ? res.blocks_found : c.blocks,
+            sessionStart: Date.now(),
+          }));
         }
-        if(typeof res.total_mined === 'number') setTotal(res.total_mined);
-        if(typeof res.blocks_found === 'number') setBlocks(res.blocks_found);
       }catch(e){
         // silent — never crash on heartbeat failure
       }
@@ -1941,24 +1954,6 @@ export default function App(){
     sesR.current=setInterval(()=>setSessT(t=>t+1),1000);
     return()=>{clearInterval(mineR.current);clearInterval(sesR.current);};
   },[mining]); // only restarts when mining toggle changes, NOT on every rate/balance update
-
-  // Calculate pending earnings for display
-  useEffect(() => {
-    if (!mining) {
-      setPendingEarnings(0);
-      return;
-    }
-    const interval = setInterval(() => {
-      // This is for display only, not added to balance
-      const now = Date.now();
-      const start = miningStartTime.current;
-      if (start) {
-        const seconds = (now - start) / 1000;
-        setPendingEarnings(effectiveRateRef.current * seconds);
-      }
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [mining, effectiveRate]);
 
   // Balance tick animation
   useEffect(()=>{
@@ -2017,9 +2012,14 @@ export default function App(){
     if(tab==='mine'&&apiLoaded){
       api.mining.getState().then(s=>{
         // Sync authoritative server balance (prevents drift from local ticker)
-        if(typeof s.balance === 'number') setBalance(s.balance);
-        if(typeof s.totalMined === 'number') setTotal(s.totalMined);
-        if(typeof s.blocks_found === 'number') setBlocks(s.blocks_found);
+        if(typeof s.balance === 'number' || typeof s.totalMined === 'number' || typeof s.blocks_found === 'number') {
+          setCommitted(c => ({
+            balance:      typeof s.balance === 'number' ? s.balance : c.balance,
+            totalMined:   typeof s.totalMined === 'number' ? s.totalMined : c.totalMined,
+            blocks:       typeof s.blocks_found === 'number' ? s.blocks_found : c.blocks,
+            sessionStart: c.sessionStart,
+          }));
+        }
         const rawUpg2=s.upgrades||{};
         const normUpg2={};
         Object.entries(rawUpg2).forEach(([k,v])=>{normUpg2[Number(k)]=v;normUpg2[String(k)]=v;});
@@ -2081,23 +2081,19 @@ export default function App(){
     async function refreshMiningState() {
       try {
         const state = await api.mining.getState();
-        setBalance(state.balance || 0);
-        setTotal(state.totalMined || 0);
-        setBlocks(state.blocks_found || 0);
+        setCommitted({
+          balance:      state.balance      || 0,
+          totalMined:   state.totalMined   || state.total_mined || 0,
+          blocks:       state.blocks_found || 0,
+          sessionStart: state.mining && state.mining_start
+                          ? new Date(state.mining_start).getTime()
+                          : null,
+        });
         const rawUpg = state.upgrades || state.upgrade_levels || {};
         const normUpg = {};
         Object.entries(rawUpg).forEach(([k,v]) => { normUpg[Number(k)]=v; normUpg[String(k)]=v; });
         setUpgrades(normUpg);
         setMining(!!state.mining);
-        if (state.mining && state.mining_start) {
-          // Use the REAL mining_start from DB, not Date.now()
-          // This means pendingEarnings counts correctly even after tab switches
-          miningStartTime.current = new Date(state.mining_start).getTime();
-          // Don't reset pendingEarnings — the interval will recalculate
-          // from the correct start time automatically
-        } else {
-          setPendingEarnings(0);
-        }
       } catch (e) {
         // don't block UI
       }
@@ -2110,7 +2106,7 @@ export default function App(){
       if (!apiLoaded) return 
     if(!mining){
       setMining(true);setSessT(0);setSessE(0);
-      miningStartTime.current = Date.now();
+      setCommitted(c => ({ ...c, sessionStart: Date.now() }));
       // Track last active time for cooling mechanic
       const now=Date.now();
       setLastActiveAt(now);
@@ -2125,9 +2121,12 @@ export default function App(){
       try{
         const res=await api.mining.stop();
         if(res.earned>0){
-          if(typeof res.balance==='number') setBalance(res.balance);
-          if(typeof res.total_mined==='number') setTotal(res.total_mined);
-          if(typeof res.blocks_found==='number') setBlocks(res.blocks_found);
+          setCommitted(c => ({
+            balance:      typeof res.balance      === 'number' ? res.balance      : c.balance,
+            totalMined:   typeof res.total_mined  === 'number' ? res.total_mined  : c.totalMined,
+            blocks:       typeof res.blocks_found === 'number' ? res.blocks_found : c.blocks,
+            sessionStart: null,
+          }));
         }
       }catch(e){ console.error('Stop error:',e); }
     }
@@ -2152,7 +2151,7 @@ export default function App(){
     try{
       const res=await api.referrals.claimTier(tier.refs);
       // Backend returns { ok, frg, reward } — apply FRG bonus to balance
-      if(typeof res.frg==='number'){ setBalance(b=>b+res.frg); setTotal(t=>t+res.frg); }
+      if(typeof res.frg==='number'){ setCommitted(c => ({ ...c, balance: c.balance + res.frg, totalMined: c.totalMined + res.frg })); }
     }catch(e){ console.error('Claim tier error:',e); }
     // Activate the actual reward
     if(tier.rewardType==='automine'||tier.rewardType==='lifetime'){
@@ -2174,7 +2173,7 @@ export default function App(){
     const octMatch = tier.subReward.replace(/,/g,'').match(/\+?(\d+)\s*FRG/);
     if(octMatch){
       const octBonus=parseInt(octMatch[1]);
-      setBalance(b=>b+octBonus);
+      setCommitted(c => ({ ...c, balance: c.balance + octBonus }));
       addParticle({x:window.innerWidth*.5,y:window.innerHeight*.38,label:`+${fmt(octBonus)} FRG`});
     }
     showToast(tier.icon,`${tier.reward} ACTIVATED!`,tier.subReward);
@@ -2187,12 +2186,12 @@ export default function App(){
 
   const claimCP=async(mId,cpIdx,reward)=>{
     setCC(prev=>{const s=new Set(prev[mId]||[]);s.add(cpIdx);return{...prev,[mId]:s};});
-    setBalance(b=>b+reward); setMP(p=>p+reward);
+    setCommitted(c => ({ ...c, balance: c.balance + reward })); setMP(p=>p+reward);
     addParticle({x:window.innerWidth*.5,y:window.innerHeight*.4,label:`+${fmt(reward)}`});
     showToast('✅',`+${fmt(reward)} FRG`,'Checkpoint claimed!');
     try{
       const res=await api.missions.claimCheckpoint(mId,cpIdx);
-      if(res.newBalance) setBalance(res.newBalance);
+      if(typeof res.newBalance==='number') setCommitted(c => ({ ...c, balance: res.newBalance }));
     }catch(e){ console.error('Mission claim error:',e); }
   };
 
@@ -2270,7 +2269,7 @@ export default function App(){
         {tab!=='mine'&&(
           <div className="topbar">
             <div className="tb-balance-center">
-              <div className="tb-bal-amt">{fmt(balance)}</div>
+              <div className="tb-bal-amt">{fmt(liveBalance)}</div>
               <div className="tb-bal-unit">FRG</div>
             </div>
           </div>
@@ -2433,7 +2432,7 @@ export default function App(){
                     <line x1="100" y1="62" x2="100" y2="80" stroke="#fff" strokeWidth=".5"/>
                   </svg>
                   <div style={{fontSize:10,fontWeight:600,color:'rgba(255,255,255,.18)',letterSpacing:'.16em',textTransform:'uppercase',marginBottom:6}}>FRG Balance</div>
-                  <div className={`bal-amount${tick?' tick':''}`} style={{fontSize:'clamp(58px,15vw,76px)',fontWeight:700,color:'rgba(255,255,255,.88)',lineHeight:1,letterSpacing:'-.04em',marginBottom:8}}>{fmt(balance + (mining ? pendingEarnings : 0))}</div>
+                  <div className={`bal-amount${tick?' tick':''}`} style={{fontSize:'clamp(58px,15vw,76px)',fontWeight:700,color:'rgba(255,255,255,.88)',lineHeight:1,letterSpacing:'-.04em',marginBottom:8}}>{fmt(liveBalance)}</div>
                   <div style={{height:22,display:'flex',alignItems:'center',justifyContent:'center'}}>
                     {mining
                       ?<div style={{display:'inline-flex',alignItems:'center',gap:5,padding:'4px 12px',borderRadius:100,background:'rgba(0,195,123,.07)',border:'1px solid rgba(0,195,123,.13)'}}>
@@ -2965,12 +2964,12 @@ export default function App(){
                        const can=liveBalance>=cost&&!maxed;
                         return(
                           <div key={u.id} onClick={()=>can&&(async()=>{
-                            setBalance(b=>b-cost);
+                            setCommitted(c => ({ ...c, balance: c.balance - cost }));
                             setUpgrades(p=>{const n={...p};n[u.id]=lv+1;n[String(u.id)]=lv+1;return n;});
                             showToast(u.icon,u.name,lv===0?'Activated!':`Level ${lv+1}`);
                             addLog('info',`◈ ${u.name} → Lv.${lv+1}`);
                             api.mining.buyUpgrade(u.id).then(res=>{
-                              if(res?.newBalance) setBalance(res.newBalance);
+                              if(typeof res?.newBalance==='number') setCommitted(c => ({ ...c, balance: res.newBalance }));
                               if(res?.new_level !== undefined) setUpgrades(p=>{const n={...p};n[u.id]=res.new_level;n[String(u.id)]=res.new_level;return n;});
                             }).catch(()=>{});
                           })()} style={{borderRadius:10,background:maxed?'rgba(0,195,123,.04)':can?'rgba(255,255,255,.04)':'rgba(255,255,255,.02)',border:`1px solid ${maxed?'rgba(0,195,123,.15)':can?'rgba(255,255,255,.1)':'rgba(255,255,255,.05)'}`,padding:'12px',cursor:can?'pointer':'default',WebkitTapHighlightColor:'transparent',position:'relative',overflow:'hidden'}}>
@@ -3245,7 +3244,7 @@ export default function App(){
                                       try{
                                         const res=await api.referrals.claimTier(tier.refs);
                                         setClaimedTiers(s=>new Set([...s,tier.refs]));
-                                        if(typeof res?.frg==='number'){setBalance(b=>b+res.frg);setTotal(t=>t+res.frg);}
+                                        if(typeof res?.frg==='number'){setCommitted(c => ({ ...c, balance: c.balance + res.frg, totalMined: c.totalMined + res.frg }));}
                                         showToast(tier.icon,'Reward Claimed!',tier.reward);
                                       }catch(e){showToast('❌','Claim failed','Try again');}
                                     }} style={{padding:'6px 12px',borderRadius:6,background:'#00c37b',border:'none',color:'#000',fontSize:10,fontWeight:700,cursor:'pointer'}}>
@@ -3591,7 +3590,7 @@ export default function App(){
                     {simRefs>0&&<span style={{fontSize:9,padding:'2px 7px',borderRadius:4,background:'rgba(80,150,255,.08)',color:'#5096ff'}}>👥 {simRefs} REFS</span>}
                   </div>
                   <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:1}}>
-                 {[{v:fmt(balance + (mining ? pendingEarnings : 0)),l:'Balance'},{v:effectiveRate.toFixed(3),l:'FRG/s'},{v:blocks,l:'Blocks'}].map((s,i)=>(
+                 {[{v:fmt(liveBalance),l:'Balance'},{v:effectiveRate.toFixed(3),l:'FRG/s'},{v:blocks,l:'Blocks'}].map((s,i)=>(
                   <div key={i} style={{padding:'10px 6px',background:'rgba(255,255,255,.03)',borderRadius:i===0?'8px 0 0 8px':i===2?'0 8px 8px 0':'0'}}>
                         <div style={{fontSize:18,fontWeight:800,color:'#fff',lineHeight:1,marginBottom:2}}>{s.v}</div>
                         <div style={{fontSize:9,color:'rgba(255,255,255,.22)',fontWeight:500}}>{s.l}</div>
@@ -3709,7 +3708,7 @@ export default function App(){
                     try{
                       const s=await api.profile.getDailyReward();
                       if(s.claimedToday){showToast('🎁','Already Claimed','Come back tomorrow!');}
-                      else{const r=await api.profile.claimDailyReward();setBalance(b=>b+r.reward);setTotal(t=>t+r.reward);if(r.streak) setStreak(r.streak);showToast('🎁',`+${fmt(r.reward)} FRG`,`Day ${r.streak||''} streak!`);}
+                      else{const r=await api.profile.claimDailyReward();setCommitted(c => ({ ...c, balance: c.balance + r.reward, totalMined: c.totalMined + r.reward }));if(r.streak) setStreak(r.streak);showToast('🎁',`+${fmt(r.reward)} FRG`,`Day ${r.streak||''} streak!`);}
                     }catch(e){showToast('🎁','Claim failed','Try again');}
                   }},
                   {icon:'wallet',name:'TON Wallet',sub:userFriendlyAddress?`${userFriendlyAddress.slice(0,8)}…${userFriendlyAddress.slice(-4)}`:'Not connected',action:()=>{if(userFriendlyAddress)setWalletMenuOpen(true);else tonConnectUI.connectWallet().catch(()=>{});}},
