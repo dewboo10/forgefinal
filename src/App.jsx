@@ -3619,7 +3619,9 @@ export default function App(){
                   ))}
                   <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 0 0'}}>
                     <span style={{fontSize:12,fontWeight:700,color:'rgba(255,255,255,.5)'}}>Total</span>
-                    <span style={{fontSize:16,fontWeight:800,color:'#fff'}}>{fmt(totalMined+(hasAutoMine?Math.floor(totalMined*.3):0)+(referralEarnings||simRefs*1240)+missionPoints)} FRG</span>
+                  <span style={{fontSize:16,fontWeight:800,color:'#fff'}}>
+  {fmt(liveTotalMined+(hasAutoMine?Math.floor(liveTotalMined*.3):0)+(referralEarnings||simRefs*1240)+missionPoints)} FRG
+</span>
                   </div>
                 </div>
 {/* Mission Claims History */}
