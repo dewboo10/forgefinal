@@ -1866,6 +1866,9 @@ export default function App(){
   const upgradeRate=UPGRADES.reduce((acc,u)=>{const lv=upgrades[u.id]||upgrades[String(u.id)]||0;return acc+u.rateBonus*lv;},0);
   const permMult=purchased['speed_perm']?2:1;
   const effectiveRate=(baseRate+upgradeRate)*(activeBoost?.mult||1)*permMult;
+  // Single source of truth for displayed balance — always includes pending
+  const liveBalance = balance + (mining ? pendingEarnings : 0);
+  const liveTotalMined = totalMined + (mining ? pendingEarnings : 0);
   // Ref so mining interval always reads latest rate without restarting
   const effectiveRateRef=useRef(effectiveRate);
   useEffect(()=>{effectiveRateRef.current=effectiveRate;},[effectiveRate]);
@@ -2179,7 +2182,7 @@ export default function App(){
   };
 
   // Mission progress
-  const getMProg=(key)=>{ if(key==='total')return totalMined; if(key==='blocks')return blocks; if(key==='time_mins')return Math.floor(sessT/60); if(key==='rate')return effectiveRate; if(key==='refs')return simRefs; return 0; };
+ const getMProg=(key)=>{ if(key==='total')return liveTotalMined; if(key==='blocks')return blocks; if(key==='time_mins')return Math.floor(sessT/60); if(key==='rate')return effectiveRate; if(key==='refs')return simRefs; return 0; };
   const totalClaimable=MISSIONS.reduce((acc,m)=>{const prog=getMProg(m.key);const claimed=new Set(claimedCPs[m.id]||[]);return acc+m.checkpoints.filter((cp,i)=>prog>=cp.at&&!claimed.has(i)).length;},0);
 
   const claimCP=async(mId,cpIdx,reward)=>{
@@ -2959,7 +2962,7 @@ export default function App(){
                         const lv=upgrades[u.id]||upgrades[String(u.id)]||0;
                         const maxed=lv>=u.maxLevel;
                         const cost=Math.round(u.baseCost*Math.pow(2.2,lv));
-                        const can=balance>=cost&&!maxed;
+                       const can=liveBalance>=cost&&!maxed;
                         return(
                           <div key={u.id} onClick={()=>can&&(async()=>{
                             setBalance(b=>b-cost);
@@ -3325,8 +3328,8 @@ export default function App(){
                             <div style={{fontSize:12,fontWeight:600,color:you?'#00c37b':'#fff',marginBottom:1}}>{you?'You':l.name}</div>
                             <div style={{fontSize:9,color:'rgba(255,255,255,.22)'}}>{l.badge||'MINER'}</div>
                           </div>
-                          <div style={{fontSize:12,fontWeight:700,color:you?'#00c37b':'rgba(255,255,255,.5)'}}>{you?fmt(balance):fmt(l.totalMined)}</div>
-                        </div>
+                          <div style={{fontSize:12,fontWeight:700,color:you?'#00c37b':'rgba(255,255,255,.5)'}}>{you?fmt(liveBalance):fmt(l.totalMined)}</div>
+                           </div>
                       );
                     })}
                     {lbData?.yourRank&&!lbData.leaderboard?.some(l=>l.isYou)&&(
@@ -3334,7 +3337,7 @@ export default function App(){
                         <div style={{width:28,fontSize:11,fontWeight:800,color:'#00c37b',flexShrink:0,textAlign:'center'}}>#{lbData.yourRank}</div>
                         <div style={{width:30,height:30,borderRadius:7,background:'rgba(0,195,123,.08)',border:'1px solid rgba(0,195,123,.15)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,flexShrink:0}}>✦</div>
                         <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:'#00c37b'}}>You</div><div style={{fontSize:9,color:'rgba(255,255,255,.22)'}}>MINER</div></div>
-                        <div style={{fontSize:12,fontWeight:700,color:'#00c37b'}}>{fmt(balance)}</div>
+                       <div style={{fontSize:12,fontWeight:700,color:'#00c37b'}}>{fmt(liveBalance)}</div>
                       </div>
                     )}
                     <div style={{padding:'10px 20px',fontSize:9,color:'rgba(255,255,255,.15)',textAlign:'center',letterSpacing:'.1em'}}>TOP 100 · UPDATES EVERY 5 MIN</div>
@@ -3601,7 +3604,8 @@ export default function App(){
                 <div style={{padding:'14px 20px',borderBottom:'1px solid rgba(255,255,255,.05)'}}>
                   <div style={{fontSize:9,fontWeight:600,color:'rgba(255,255,255,.18)',letterSpacing:'.12em',textTransform:'uppercase',marginBottom:10}}>Earnings Breakdown</div>
                   {[
-                    {dot:'#00c37b',l:'Active mining',v:`${fmt(totalMined)} FRG`},
+                    // {dot:'#00c37b',l:'Active mining',v:`${fmt(totalMined)} FRG`},
+                    {dot:'#00c37b',l:'Active mining',v:`${fmt(liveTotalMined)} FRG`},
                     {dot:'#00c37b',l:`Auto-mine${!hasAutoMine?' (locked)':''}`,v:hasAutoMine?`${fmt(Math.floor(totalMined*.3))} FRG`:'—',dim:!hasAutoMine},
                     {dot:'#5096ff',l:'Referral income',v:referralEarnings>0?`${fmt(referralEarnings)} FRG`:`${fmt(simRefs*1240)} FRG`,c:'#5096ff'},
                     {dot:'#b464ff',l:'Mission rewards',v:`${fmt(missionPoints)} FRG`,c:'#b464ff'},
