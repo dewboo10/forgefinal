@@ -1668,10 +1668,30 @@ export default function App(){
   // ── On mount: auth + load state from backend ──────────────
   useEffect(()=>{
     async function init(){
+      // Declare outside try so it's accessible in the wallet check below
+      let loginResult = { isNewUser: false };
+
       try{
-        const loginResult = await api.auth.login();
+        loginResult = await api.auth.login();
         const user = loginResult.user;
+
+        // Tell onboarding whether this is a brand new account
         checkOnboarding(loginResult.isNewUser || false);
+
+        // If new user (DB was wiped), clear all local state
+        if (loginResult.isNewUser) {
+          localStorage.removeItem('forge_wallet_bonus');
+          localStorage.removeItem('forge_genesis_badge');
+          localStorage.removeItem('forge_last_active');
+          localStorage.removeItem('forge_legacy_seen');
+          // Clear TonConnect's own localStorage keys manually
+          Object.keys(localStorage)
+            .filter(k => k.startsWith('ton-connect'))
+            .forEach(k => localStorage.removeItem(k));
+          try { await tonConnectUI.disconnect(); } catch(e) {}
+          setWalletBonusClaimed(false);
+          setGenesisBadge(false);
+        }
 
         // Fetch mining state for accurate balance, totalMined, blocks
         const state = await api.mining.getState();
@@ -1683,37 +1703,42 @@ export default function App(){
                           ? new Date(state.mining_start).getTime()
                           : null,
         });
-         const rawUpg = state.upgrades || state.upgrade_levels || {};
+
+        const rawUpg = state.upgrades || state.upgrade_levels || {};
         const normUpg = {};
         Object.entries(rawUpg).forEach(([k,v]) => { normUpg[Number(k)]=v; normUpg[String(k)]=v; });
         setUpgrades(normUpg);
+
         if (state.mining) setMining(true);
+
         // Get accurate purchased state from store (handles expiry correctly)
         try{
-          const storeData=await api.store.getPurchased();
-          const map={};
-          (storeData.purchased||[]).forEach(id=>{map[id]=true;});
-          // Also include permanent items from user.purchased (speed_perm etc)
-          (user.purchased||[]).forEach(id=>{map[id]=true;});
+          const storeData = await api.store.getPurchased();
+          const map = {};
+          (storeData.purchased||[]).forEach(id=>{ map[id]=true; });
+          (user.purchased||[]).forEach(id=>{ map[id]=true; });
           setPurch(map);
         }catch(e){
-          // Fallback to auth data
           setPurch(Object.fromEntries((user.purchased||[]).map(k=>[k,true])));
         }
+
         setSimRefs(user.referralCount||0);
         if(user.referralCode) setRefCode(user.referralCode);
-        // Load real referral earnings on init
+
+        // Load real referral earnings
         try{
           const refInfo = await api.referrals.getInfo();
           setSimRefs(refInfo.ref_count||refInfo.referralCount||0);
           if(refInfo.ref_code||refInfo.referralCode) setRefCode(refInfo.ref_code||refInfo.referralCode);
           if(typeof refInfo.referral_earnings==='number') setReferralEarnings(refInfo.referral_earnings);
         }catch(e){}
+
         // Load real daily streak from server
         try{
           const dailyData = await api.profile.getDailyReward();
           setStreak(dailyData.streak||0);
         }catch(e){}
+
         // Load claimed mission checkpoints from DB on every login
         try{
           const missionData = await api.missions.getAll();
@@ -1727,48 +1752,56 @@ export default function App(){
           });
           setCC(loadedClaims);
         }catch(e){}
+
+        // If mining was already active when user opens app, set session start
         if(user.miningStartedAt) {
           setMining(true);
           setCommitted(c => ({ ...c, sessionStart: new Date(user.miningStartedAt).getTime() }));
-          // Pending earnings calculated from start time
         }
+
         // Claim offline earnings if auto-mine active
         if((user.purchased||[]).some(p=>p.includes('auto'))){
           try{
-            const offline=await api.mining.claimOffline();
+            const offline = await api.mining.claimOffline();
             if(offline.earned>0){
               setCommitted(c => ({
                 ...c,
-                balance: c.balance + offline.earned,
+                balance:    c.balance + offline.earned,
                 totalMined: c.totalMined + offline.earned,
-                blocks: typeof offline.blocks_found === 'number' ? offline.blocks_found : c.blocks,
+                blocks:     typeof offline.blocks_found === 'number' ? offline.blocks_found : c.blocks,
               }));
               showToast('🤖','Auto-Mine Earnings',`+${fmt(offline.earned)} FRG while offline`);
             }
           }catch(e){}
         }
+
         setApiLoaded(true);
+
       }catch(e){
-        console.error('Init error:',e);
+        console.error('Init error:', e);
         setApiLoaded(true); // still show UI in dev mode
       }
-      // Check wallet bonus status from server (source of truth, overrides localStorage)
-      try{
-        const walletData = await api.wallet.getWallet();
-        if(walletData.bonusClaimed){
-          setWalletBonusClaimed(true);
-          localStorage.setItem('forge_wallet_bonus','1');
-        }
-      }catch(e){}
+
+      // Check wallet bonus status from server — skip if new user (nothing in DB yet)
+      if (!loginResult.isNewUser) {
+        try{
+          const walletData = await api.wallet.getWallet();
+          if(walletData.bonusClaimed){
+            setWalletBonusClaimed(true);
+            localStorage.setItem('forge_wallet_bonus','1');
+          }
+        }catch(e){}
+      }
+
       // Fetch real total users for halving display
       try{
         const statsData = await api.stats.getTotalUsers();
         if(typeof statsData.total_users==='number') setTotalUsers(statsData.total_users);
       }catch(e){}
     }
+
     init();
   },[]);
-
   // Fetch notifications on load and when panel opens
   useEffect(()=>{
     api.notifications?.getAll().then(result => setNotifs(result.notifications || [])).catch(()=>{});
