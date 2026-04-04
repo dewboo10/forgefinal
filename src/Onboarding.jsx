@@ -512,7 +512,20 @@ export default function Onboarding({ onDone }) {
 // ─── Hook: useOnboarding ──────────────────────────────────────────────────────
 // Use this in App.jsx to gate the onboarding
 export function useOnboarding() {
-  const [show, setShow] = useState(() => !localStorage.getItem(STORAGE_KEY))
+  const [show, setShow] = useState(false) // don't read localStorage on init
+  
+  const checkOnboarding = (isNewUser) => {
+    if (isNewUser) {
+      // New user in DB — always show onboarding and clear old flag
+      localStorage.removeItem(STORAGE_KEY)
+      setShow(true)
+    } else {
+      // Existing user — only show if they never finished it on this device
+      setShow(!localStorage.getItem(STORAGE_KEY))
+    }
+  }
+
   const done = () => setShow(false)
-  return { showOnboarding: show, onboardingDone: done }
+
+  return { showOnboarding: show, onboardingDone: done, checkOnboarding }
 }

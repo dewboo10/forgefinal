@@ -1565,8 +1565,8 @@ function NodeExpandable({t,r,g,b,mining,effectiveRate,hasAutoMine,purchased,upgr
 }
 /* ═══ MAIN APP ═══ */
 export default function App(){
-  const { showOnboarding, onboardingDone } = useOnboarding()  // ← new state to control onboarding flow
-  
+  // const { showOnboarding, onboardingDone } = useOnboarding()  // ← new state to control onboarding flow
+  const { showOnboarding, onboardingDone, checkOnboarding } = useOnboarding()
   const [tab,setTab]=useState('mine');
   const [committed,setCommitted]=useState({
     balance:0,
@@ -1671,6 +1671,8 @@ export default function App(){
       try{
         const loginResult = await api.auth.login();
         const user = loginResult.user;
+        checkOnboarding(loginResult.isNewUser || false);
+
         // Fetch mining state for accurate balance, totalMined, blocks
         const state = await api.mining.getState();
         setCommitted({
