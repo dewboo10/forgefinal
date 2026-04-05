@@ -1867,7 +1867,7 @@ export default function App(){
       showToast('⏳','Verifying payment','Please wait...');
       // Verify on backend — backend activates the item
       const res=await api.store.verifyPurchase(tx.boc,item.id);
-      if(res.success){
+      if(res.ok){
         // Handle one-time boost activations (not permanent purchases)
         if(item.id==='boost_surge'){
           setAB({mult:3,rem:60,label:'3× SURGE'});
