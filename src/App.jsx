@@ -254,22 +254,22 @@ function TierIcon({icon, color='#fff', size=20}) {
 
 const STORE_SECTIONS = [
   { id:"auto", label:"Auto-Mine", emoji:"🤖", color:"#e8b84b", tagline:"Earn while you sleep", items:[
-    { id:"auto_7d",       name:"Auto-Mine · 7 Days",   icon:"🤖", priceTON:3,  tag:"STARTER",    tagColor:"#5ec98a", badge:"7 DAYS",   shortDesc:"Full rate while offline for 7 days",      earningNote:"At 0.1/s → +60,480 FRG offline",        color:"#e8b84b" },
-    { id:"auto_30d",      name:"Auto-Mine · 30 Days",  icon:"🤖", priceTON:10, tag:"POPULAR",    tagColor:"#e8b84b", badge:"30 DAYS",  shortDesc:"Best value — covers a full season",        earningNote:"At 0.1/s → +259,200 FRG offline",       color:"#e8b84b", flagship:true },
-    { id:"auto_lifetime", name:"Auto-Mine · Lifetime", icon:"♾️", priceTON:30, tag:"BEST VALUE", tagColor:"#c07cf0", badge:"FOREVER",  shortDesc:"One purchase. Mine offline forever.",     earningNote:"Pays for itself in 3.5 days then free forever.", color:"#c07cf0", flagship:true },
+    { id:"auto_7d",       name:"Auto-Mine · 7 Days",   icon:"🤖", priceTON:0.001,  tag:"STARTER",    tagColor:"#5ec98a", badge:"7 DAYS",   shortDesc:"Full rate while offline for 7 days",      earningNote:"At 0.1/s → +60,480 FRG offline",        color:"#e8b84b" },
+    { id:"auto_30d",      name:"Auto-Mine · 30 Days",  icon:"🤖", priceTON:0.002, tag:"POPULAR",    tagColor:"#e8b84b", badge:"30 DAYS",  shortDesc:"Best value — covers a full season",        earningNote:"At 0.1/s → +259,200 FRG offline",       color:"#e8b84b", flagship:true },
+    { id:"auto_lifetime", name:"Auto-Mine · Lifetime", icon:"♾️", priceTON:0.01, tag:"BEST VALUE", tagColor:"#c07cf0", badge:"FOREVER",  shortDesc:"One purchase. Mine offline forever.",     earningNote:"Pays for itself in 3.5 days then free forever.", color:"#c07cf0", flagship:true },
   ]},
   { id:"speed", label:"Speed Multipliers", emoji:"⚡", color:"#5ec98a", tagline:"Mine faster right now", items:[
-    { id:"speed_3x",   name:"3× Speed · 7 Days",  icon:"⚡", priceTON:4,  tag:null,      tagColor:null,     badge:"3× · 7 DAYS",  shortDesc:"Triple earnings for a week",              earningNote:"Stack with Auto-Mine for 3× offline",    color:"#5ec98a" },
-    { id:"speed_5x",   name:"5× Speed · 7 Days",  icon:"🔥", priceTON:8,  tag:"STRONG",  tagColor:"#e06c4c",badge:"5× · 7 DAYS",  shortDesc:"Best for leaderboard pushes",             earningNote:"5× faster offline with Auto-Mine",       color:"#e06c4c" },
-    { id:"speed_perm", name:"Permanent 2× Core",  icon:"🔮", priceTON:18, tag:"FOREVER", tagColor:"#c07cf0",badge:"2× FOREVER",   shortDesc:"Everything you earn doubled forever",     earningNote:"Every upgrade and auto-mine multiplied by 2×", color:"#c07cf0", flagship:true },
+    { id:"speed_3x",   name:"3× Speed · 7 Days",  icon:"⚡", priceTON:0.01,  tag:null,      tagColor:null,     badge:"3× · 7 DAYS",  shortDesc:"Triple earnings for a week",              earningNote:"Stack with Auto-Mine for 3× offline",    color:"#5ec98a" },
+    { id:"speed_5x",   name:"5× Speed · 7 Days",  icon:"🔥", priceTON:0.008,  tag:"STRONG",  tagColor:"#e06c4c",badge:"5× · 7 DAYS",  shortDesc:"Best for leaderboard pushes",             earningNote:"5× faster offline with Auto-Mine",       color:"#e06c4c" },
+    { id:"speed_perm", name:"Permanent 2× Core",  icon:"🔮", priceTON:0.018, tag:"FOREVER", tagColor:"#c07cf0",badge:"2× FOREVER",   shortDesc:"Everything you earn doubled forever",     earningNote:"Every upgrade and auto-mine multiplied by 2×", color:"#c07cf0", flagship:true },
   ]},
   { id:"chests", label:"FRG Head Start", emoji:"📦", color:"#5ba8e8", tagline:"Skip the early grind", items:[
-    { id:"chest_s",  name:"Head Start · S",  icon:"📦", priceTON:2,  tag:null,          tagColor:null,     badge:"25K FRG",  shortDesc:"Unlock first 3 upgrades instantly",       earningNote:"Immediate rate boost pays back in 70h",  color:"#5ba8e8" },
-    { id:"chest_m",  name:"Head Start · M",  icon:"📦", priceTON:5,  tag:"VALUE",        tagColor:"#5ec98a",badge:"100K FRG", shortDesc:"Max all base upgrades day one",           earningNote:"86× faster than free users from day 1",  color:"#5ba8e8" },
-    { id:"chest_xl", name:"Head Start · XL", icon:"💎", priceTON:14, tag:"LEADERBOARD",  tagColor:"#c07cf0",badge:"500K FRG", shortDesc:"Instant top-leaderboard position",        earningNote:"Top rank attracts referrals → 10% forever", color:"#c07cf0", flagship:true },
+    { id:"chest_s",  name:"Head Start · S",  icon:"📦", priceTON:0.002,  tag:null,          tagColor:null,     badge:"25K FRG",  shortDesc:"Unlock first 3 upgrades instantly",       earningNote:"Immediate rate boost pays back in 70h",  color:"#5ba8e8" },
+    { id:"chest_m",  name:"Head Start · M",  icon:"📦", priceTON:0.005,  tag:"VALUE",        tagColor:"#5ec98a",badge:"100K FRG", shortDesc:"Max all base upgrades day one",           earningNote:"86× faster than free users from day 1",  color:"#5ba8e8" },
+    { id:"chest_xl", name:"Head Start · XL", icon:"💎", priceTON:0.014, tag:"LEADERBOARD",  tagColor:"#c07cf0",badge:"500K FRG", shortDesc:"Instant top-leaderboard position",        earningNote:"Top rank attracts referrals → 10% forever", color:"#c07cf0", flagship:true },
   ]},
   { id:"referral", label:"Referral Amplifiers", emoji:"👥", color:"#e06c4c", tagline:"Earn more from people you already referred", items:[
-    { id:"ref_2x", name:"Referral 2× Amp", icon:"📡", priceTON:5,  tag:null,          tagColor:null,      badge:"2× PASSIVE", shortDesc:"Double what every referral earns you",    earningNote:"10 friends → earn 20% not 10%",          color:"#e06c4c" },
+    { id:"ref_2x", name:"Referral 2× Amp", icon:"📡", priceTON:0.005,  tag:null,          tagColor:null,      badge:"2× PASSIVE", shortDesc:"Double what every referral earns you}",    earningNote:"10 friends → earn 20% not 10%",          color:"#e06c4c" },
     { id:"ref_5x", name:"Referral 5× Amp", icon:"📡", priceTON:15, tag:"HIGH INCOME", tagColor:"#e06c4c", badge:"5× PASSIVE", shortDesc:"50% of all referral earnings forever",   earningNote:"10 friends × 100 FRG/day = 500 FRG/day to you", color:"#e06c4c", flagship:true },
   ]},
 ];
