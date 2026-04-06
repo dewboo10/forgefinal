@@ -1862,7 +1862,7 @@ export default function App(){
       const nanoTON=BigInt(Math.round(item.priceTON*1e9));
       const tx=await tonConnectUI.sendTransaction({
         validUntil:Math.floor(Date.now()/1000)+360,
-        messages:[{address:RECIPIENT,amount:nanoTON.toString(),payload:''}]
+         messages:[{address:RECIPIENT,amount:nanoTON.toString()}]
       });
       console.log('TON sendTransaction result:', tx);
       if (!tx || !tx.boc) {
