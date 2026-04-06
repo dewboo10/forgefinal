@@ -1864,44 +1864,59 @@ export default function App(){
         validUntil:Math.floor(Date.now()/1000)+360,
         messages:[{address:RECIPIENT,amount:nanoTON.toString(),payload:''}]
       });
+      console.log('TON sendTransaction result:', tx);
+      if (!tx || !tx.boc) {
+        showToast('❌','Transaction failed','No transaction data returned from wallet');
+        console.error('TON transaction missing boc:', tx);
+        return;
+      }
       showToast('⏳','Verifying payment','Please wait...');
       // Verify on backend — backend activates the item
-      const res=await api.store.verifyPurchase(tx.boc,item.id);
-      if(res.ok){
-        // Handle one-time boost activations (not permanent purchases)
-        if(item.id==='boost_surge'){
-          setAB({mult:3,rem:60,label:'3× SURGE'});
-          showToast('⚡','3× SURGE Active!','60 seconds · paid');
-          addLog('info','⚡ Paid SURGE activated');
-        } else if(item.id==='boost_turbo'){
-          setAB({mult:2,rem:90,label:'TURBO'});
-          showToast('🔥','TURBO Active!','90 seconds · paid');
-          addLog('info','🔥 Paid TURBO activated');
-        } else if(item.type==='chest'){
-          // Chest: FRG credited, not added to purchased
-          if(typeof res.newBalance==='number') setCommitted(c => ({ ...c, balance: res.newBalance }));
-          showToast('📦',`+${res.frgCredited?.toLocaleString()||''} FRG`,`Head Start credited!`);
-          addLog('info',`📦 ${item.name}: +${res.frgCredited} FRG`);
-        } else if(res.expiresAt){
-          // Expirable item (auto_7d, auto_30d, speed_3x etc)
-          setPurch(p=>({...p,[item.id]:true}));
-          if(typeof res.newBalance==='number') setCommitted(c => ({ ...c, balance: res.newBalance }));
-          const exp=new Date(res.expiresAt);
-          showToast('✅',`${item.name} Active!`,`Expires ${exp.toLocaleDateString()}`);
-          addLog('info',`💎 ${item.name} active until ${exp.toLocaleDateString()}`);
-        } else {
-          // Permanent item (speed_perm, auto_lifetime)
-          setPurch(p=>({...p,[item.id]:true}));
-          if(typeof res.newBalance==='number') setCommitted(c => ({ ...c, balance: res.newBalance }));
-          showToast('✅',`${item.name} Activated!`,`Paid ${item.priceTON} TON · permanent`);
-          addLog('info',`💎 ${item.name}: permanent`);
-        }
+      let res = null;
+      try {
+        res = await api.store.verifyPurchase(tx.boc,item.id);
+      } catch (err) {
+        console.error('verifyPurchase request failed:', err);
+        throw err;
+      }
+      if (!res.ok) {
+        showToast('❌','Verification failed', res.error || res.detail || 'Contact support if TON was deducted');
+        console.error('verifyPurchase returned error:', res);
+        return;
+      }
+      // Handle one-time boost activations (not permanent purchases)
+      if(item.id==='boost_surge'){
+        setAB({mult:3,rem:60,label:'3× SURGE'});
+        showToast('⚡','3× SURGE Active!','60 seconds · paid');
+        addLog('info','⚡ Paid SURGE activated');
+      } else if(item.id==='boost_turbo'){
+        setAB({mult:2,rem:90,label:'TURBO'});
+        showToast('🔥','TURBO Active!','90 seconds · paid');
+        addLog('info','🔥 Paid TURBO activated');
+      } else if(item.type==='chest'){
+        // Chest: FRG credited, not added to purchased
+        if(typeof res.newBalance==='number') setCommitted(c => ({ ...c, balance: res.newBalance }));
+        showToast('📦',`+${res.frgCredited?.toLocaleString()||''} FRG`,`Head Start credited!`);
+        addLog('info',`📦 ${item.name}: +${res.frgCredited} FRG`);
+      } else if(res.expiresAt){
+        // Expirable item (auto_7d, auto_30d, speed_3x etc)
+        setPurch(p=>({...p,[item.id]:true}));
+        if(typeof res.newBalance==='number') setCommitted(c => ({ ...c, balance: res.newBalance }));
+        const exp=new Date(res.expiresAt);
+        showToast('✅',`${item.name} Active!`,`Expires ${exp.toLocaleDateString()}`);
+        addLog('info',`💎 ${item.name} active until ${exp.toLocaleDateString()}`);
+      } else {
+        // Permanent item (speed_perm, auto_lifetime)
+        setPurch(p=>({...p,[item.id]:true}));
+        if(typeof res.newBalance==='number') setCommitted(c => ({ ...c, balance: res.newBalance }));
+        showToast('✅',`${item.name} Activated!`,`Paid ${item.priceTON} TON · permanent`);
+        addLog('info',`💎 ${item.name}: permanent`);
       }
     }catch(e){
-      if(e.message?.includes('cancelled')||e.message?.includes('rejected')){
+      if(e.message?.includes('cancelled')||e.message?.includes('rejected')||e.code==='USER_REJECTED'){
         showToast('❌','Transaction cancelled','No payment was made');
       } else {
-       showToast('❌','Verification failed', res?.detail || 'Contact support if TON was deducted');
+        showToast('❌','Verification failed', e.message || 'Contact support if TON was deducted');
         console.error('Purchase error:',e);
       }
     }
