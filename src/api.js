@@ -23,7 +23,19 @@ async function req(method, path, body) {
     body: body !== undefined && body !== null ? JSON.stringify(body) : undefined,
   })
 
-  if (!res.ok) throw new Error(`API ${method} ${path} → ${res.status}`)
+  if (!res.ok) {
+    let errorText = `API ${method} ${path} → ${res.status}`
+    try {
+      const data = await res.json()
+      if (data?.error || data?.detail) {
+        errorText += `: ${data.error || data.detail}`
+      }
+    } catch (_err) {
+      const text = await res.text().catch(() => '')
+      if (text) errorText += `: ${text}`
+    }
+    throw new Error(errorText)
+  }
   return res.json()
 }
 

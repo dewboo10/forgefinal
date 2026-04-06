@@ -1877,7 +1877,8 @@ export default function App(){
         res = await api.store.verifyPurchase(tx.boc,item.id);
       } catch (err) {
         console.error('verifyPurchase request failed:', err);
-        throw err;
+        showToast('❌','Verification failed', err.message || 'Contact support if TON was deducted');
+        return;
       }
       if (!res.ok) {
         showToast('❌','Verification failed', res.error || res.detail || 'Contact support if TON was deducted');
