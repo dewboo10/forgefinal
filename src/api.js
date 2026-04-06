@@ -79,6 +79,7 @@ export const store = {
 
   // Get user's active purchases
   getPurchased: () => req('GET', '/api/store/purchased'),
+  useBoost: (boostType) => req('POST', '/api/store/use-boost', { boostType }),
 
   // Get a Telegram Stars invoice link for an item
   getInvoice: (itemId) => req('GET', `/api/store/invoice?itemId=${encodeURIComponent(itemId)}`),

@@ -1645,6 +1645,38 @@ export default function App(){
       console.error('buyWithStars error:',e);
     }
   },[showToast]);
+
+  const useBoost=useCallback(async(boostType)=>{
+    if(!mining){
+      showToast('❌','Not mining','Start mining before using a boost');
+      return;
+    }
+    if(activeBoost){
+      showToast('❌','Boost already active','Wait for the current boost to finish');
+      return;
+    }
+    try{
+      const res = await api.store.useBoost(boostType);
+      if(!res.ok) throw new Error(res.error || 'Failed to activate boost');
+      const state = res.state;
+      if(typeof state.boost_charges === 'number') setBoostCh(state.boost_charges);
+      if(typeof state.turbo_charges === 'number') setTurboCh(state.turbo_charges);
+      if(state.boost_surge_used) setSurgeUsedAt(new Date(state.boost_surge_used).getTime());
+      if(state.boost_turbo_used) setTurboUsedAt(new Date(state.boost_turbo_used).getTime());
+      if(state.boost) {
+        const remaining = Math.max(0, Math.ceil((new Date(state.boost.until).getTime() - Date.now()) / 1000));
+        const label = state.boost.type === '3x_surge' ? '3× SURGE' : '5× SURGE';
+        const mult = state.boost.type === '3x_surge' ? 3 : 5;
+        setAB({ mult, rem: remaining, label });
+        showToast(state.boost.type === '3x_surge' ? '⚡' : '🔥', `${label} Active!`, `${remaining}s`);
+        addLog('info', `${label} activated`);
+      }
+    }catch(e){
+      showToast('❌','Boost failed', e.message || 'Try again');
+      console.error('useBoost error:', e);
+    }
+  },[mining, activeBoost, addLog, showToast]);
+
   const addParticle=useCallback(({x,y,label})=>{const id=pid.current++;setPart(p=>[...p,{id,x,y,label}]);setTimeout(()=>setPart(p=>p.filter(q=>q.id!==id)),1100);},[]);
   const addLog=useCallback((type,msg)=>setLog(p=>[{t:nowTs(),type,msg},...p].slice(0,40)),[]);
   const [apiLoaded,setApiLoaded]=useState(false);
@@ -1720,6 +1752,26 @@ export default function App(){
           setPurch(map);
         }catch(e){
           setPurch(Object.fromEntries((user.purchased||[]).map(k=>[k,true])));
+        }
+
+        const boostCount = typeof state.boost_charges === 'number' ? state.boost_charges : 0
+        const turboCount = typeof state.turbo_charges === 'number' ? state.turbo_charges : 0
+        const surgeUsedAtMs = state.boost_surge_used ? new Date(state.boost_surge_used).getTime() : null
+        const turboUsedAtMs = state.boost_turbo_used ? new Date(state.boost_turbo_used).getTime() : null
+        const surgeReady = surgeUsedAtMs === null || Date.now() - surgeUsedAtMs >= 4*3600000
+        const turboReady = turboUsedAtMs === null || Date.now() - turboUsedAtMs >= 6*3600000
+
+        setBoostCh(boostCount > 0 ? boostCount : surgeReady ? 1 : 0)
+        setTurboCh(turboCount > 0 ? turboCount : turboReady ? 1 : 0)
+        setSurgeUsedAt(surgeUsedAtMs)
+        setTurboUsedAt(turboUsedAtMs)
+        if (state.boost) {
+          const remaining = Math.max(0, Math.ceil((new Date(state.boost.until).getTime() - Date.now()) / 1000))
+          setAB({
+            mult: state.boost.type === '3x_surge' ? 3 : 5,
+            rem: remaining,
+            label: state.boost.type === '3x_surge' ? '3× SURGE' : '5× SURGE',
+          })
         }
 
         setSimRefs(user.referralCount||0);
@@ -2649,7 +2701,7 @@ export default function App(){
                       badgeColor:surgeCd?'#ff4d4d':boostCh>0?'#00c37b':'#ffc100',
                       sub:boostCh>0?'Free · 4h reset':surgeCd||'⭐ Stars',
                       canUse:mining&&!activeBoost&&!surgeCd&&boostCh>0,
-                      onTap:()=>{if(mining&&!activeBoost&&!surgeCd&&boostCh>0){setAB({mult:3,rem:60,label:'3× SURGE'});setBoostCh(0);setSurgeUsedAt(Date.now());showToast('⚡','3× SURGE Active','60 seconds');}},
+                      onTap:()=>{if(mining&&!activeBoost&&!surgeCd&&boostCh>0){useBoost('boost_surge');}},
                       onBuy:()=>buyWithStars('boost_surge'),
                       needsBuy:!boostCh&&!activeBoost,
                       ill:<svg width="60" height="60" viewBox="0 0 70 70">
@@ -2668,7 +2720,7 @@ export default function App(){
                       badgeColor:turboCd?'#ff4d4d':turboCh>0?'#00c37b':'#ffc100',
                       sub:turboCh>0?'Free · 6h reset':turboCd||'⭐ Stars',
                       canUse:mining&&!activeBoost&&!turboCd&&turboCh>0,
-                      onTap:()=>{if(mining&&!activeBoost&&!turboCd&&turboCh>0){setAB({mult:5,rem:60,label:'5× SURGE'});setTurboCh(0);setTurboUsedAt(Date.now());showToast('🔥','5× SURGE Active','60 seconds');}},
+                      onTap:()=>{if(mining&&!activeBoost&&!turboCd&&turboCh>0){useBoost('boost_turbo');}},
                       onBuy:()=>buyWithStars('boost_turbo'),
                       needsBuy:!turboCh&&!activeBoost,
                       ill:<svg width="60" height="60" viewBox="0 0 70 70">
