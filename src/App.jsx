@@ -2947,9 +2947,9 @@ export default function App(){
                     {!purchased['auto_lifetime']?(
                       <div style={{display:'flex',flexDirection:'column',gap:0}}>
                         {[
-                          {id:'auto_lifetime',icon:'♾️',name:'Lifetime Auto-Mine',desc:'Mine 24/7 forever — even offline',price:30,badge:'FOREVER',highlight:true},
-                          {id:'auto_30d',    icon:'autobot',name:'30 Day Auto-Mine',  desc:'Best monthly value',price:10,badge:'POPULAR',highlight:false},
-                          {id:'auto_7d',     icon:'autobot',name:'7 Day Auto-Mine',   desc:'Start earning offline today',price:3, badge:null,highlight:false},
+                          {id:'auto_lifetime',icon:'♾️',name:'Lifetime Auto-Mine',desc:'Mine 24/7 forever — even offline',price:0.1,badge:'FOREVER',highlight:true},
+                          {id:'auto_30d',    icon:'autobot',name:'30 Day Auto-Mine',  desc:'Best monthly value',price:0.002,badge:'POPULAR',highlight:false},
+                          {id:'auto_7d',     icon:'autobot',name:'7 Day Auto-Mine',   desc:'Start earning offline today',price:0.001, badge:null,highlight:false},
                         ].map(item=>{
                           const owned=!!purchased[item.id];
                           return(
