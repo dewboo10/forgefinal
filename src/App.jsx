@@ -256,7 +256,7 @@ const STORE_SECTIONS = [
   { id:"auto", label:"Auto-Mine", emoji:"🤖", color:"#e8b84b", tagline:"Earn while you sleep", items:[
     { id:"auto_7d",       name:"Auto-Mine · 7 Days",   icon:"🤖", priceTON:0.001,  tag:"STARTER",    tagColor:"#5ec98a", badge:"7 DAYS",   shortDesc:"Full rate while offline for 7 days",      earningNote:"At 0.1/s → +60,480 FRG offline",        color:"#e8b84b" },
     { id:"auto_30d",      name:"Auto-Mine · 30 Days",  icon:"🤖", priceTON:0.002, tag:"POPULAR",    tagColor:"#e8b84b", badge:"30 DAYS",  shortDesc:"Best value — covers a full season",        earningNote:"At 0.1/s → +259,200 FRG offline",       color:"#e8b84b", flagship:true },
-    { id:"auto_lifetime", name:"Auto-Mine · Lifetime", icon:"♾️", priceTON:0.01, tag:"BEST VALUE", tagColor:"#c07cf0", badge:"FOREVER",  shortDesc:"One purchase. Mine offline forever.",     earningNote:"Pays for itself in 3.5 days then free forever.", color:"#c07cf0", flagship:true },
+    { id:"auto_lifetime", name:"Auto-Mine · Lifetime", icon:"♾️", priceTON:0.1, tag:"BEST VALUE", tagColor:"#c07cf0", badge:"FOREVER",  shortDesc:"One purchase. Mine offline forever.",     earningNote:"Pays for itself in 3.5 days then free forever.", color:"#c07cf0", flagship:true }, // updated price from 0.01 TON to 0.1 TON
   ]},
   { id:"speed", label:"Speed Multipliers", emoji:"⚡", color:"#5ec98a", tagline:"Mine faster right now", items:[
     { id:"speed_3x",   name:"3× Speed · 7 Days",  icon:"⚡", priceTON:0.01,  tag:null,      tagColor:null,     badge:"3× · 7 DAYS",  shortDesc:"Triple earnings for a week",              earningNote:"Stack with Auto-Mine for 3× offline",    color:"#5ec98a" },
