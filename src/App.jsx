@@ -1901,7 +1901,7 @@ export default function App(){
       if(e.message?.includes('cancelled')||e.message?.includes('rejected')){
         showToast('❌','Transaction cancelled','No payment was made');
       } else {
-        showToast('❌','Verification failed','Contact support if TON was deducted');
+       showToast('❌','Verification failed', res?.detail || 'Contact support if TON was deducted');
         console.error('Purchase error:',e);
       }
     }
