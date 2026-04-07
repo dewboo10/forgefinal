@@ -83,9 +83,16 @@ export const mining = {
 }
 
 // ─── BOOSTS ─────────────────────────────────────────────────
+// export const boosts = {
+//   activate: (boostType) => req('POST', '/api/mining/boost/activate', { boostType }),
+// }
 export const boosts = {
-  activate: (boostType) => req('POST', '/api/mining/boost/activate', { boostType }),
+  activate: (boostType) => apiFetch('/api/mining/boost/activate', {
+    method: 'POST',
+    body: JSON.stringify({ boostType }),
+  }),
 }
+
 
 // ─── STORE / TON PAYMENTS ───────────────────────────────────
 export const store = {

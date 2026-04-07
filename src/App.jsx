@@ -1712,6 +1712,8 @@ export default function App(){
         // ── NEW: hydrate boost cooldowns from server so reload can't bypass them ──
         if (state.surge_used_at) setSurgeUsedAt(state.surge_used_at)
         if (state.turbo_used_at) setTurboUsedAt(state.turbo_used_at)
+if (typeof state.boost_charges === 'number') setBoostCh(state.boost_charges)
+if (typeof state.turbo_charges === 'number') setTurboCh(state.turbo_charges)
 
         if (state.mining) setMining(true);
 
@@ -2661,13 +2663,16 @@ export default function App(){
                           setBoostCh(0)
                           setSurgeUsedAt(res.activatedAt)   // use server timestamp
                           showToast('⚡', '3× SURGE Active', '60 seconds')
-                        } catch (e) {
-                          if (e?.status === 429 || e?.remainingMs) {
-                            showToast('⏳', 'Cooldown Active', 'Not ready yet')
-                          } else {
-                            showToast('❌', 'Boost failed', 'Try again')
-                          }
-                        }
+                   } catch (e) {
+  const msg = e?.message || ''
+  if (msg.includes('429') || msg.includes('Cooldown') || msg.includes('cooldown')) {
+    showToast('⏳', 'Cooldown Active', 'Not ready yet')
+  } else if (msg.includes('charges') || msg.includes('No charges')) {
+    showToast('⚡', 'No charges left', 'Buy more with Stars')
+  } else {
+    showToast('❌', 'Boost failed', e?.message || 'Try again')
+  }
+}
                       },
                       onBuy:()=>buyWithStars('boost_surge'),
                       needsBuy:!boostCh&&!activeBoost,
@@ -2695,13 +2700,16 @@ export default function App(){
                           setTurboCh(0)
                           setTurboUsedAt(res.activatedAt)   // use server timestamp
                           showToast('🔥', '5× SURGE Active', '60 seconds')
-                        } catch (e) {
-                          if (e?.status === 429 || e?.remainingMs) {
-                            showToast('⏳', 'Cooldown Active', 'Not ready yet')
-                          } else {
-                            showToast('❌', 'Boost failed', 'Try again')
-                          }
-                        }
+                     } catch (e) {
+  const msg = e?.message || ''
+  if (msg.includes('429') || msg.includes('Cooldown') || msg.includes('cooldown')) {
+    showToast('⏳', 'Cooldown Active', 'Not ready yet')
+  } else if (msg.includes('charges') || msg.includes('No charges')) {
+    showToast('🔥', 'No charges left', 'Buy more with Stars')
+  } else {
+    showToast('❌', 'Boost failed', e?.message || 'Try again')
+  }
+}
                       },
                       onBuy:()=>buyWithStars('boost_turbo'),
                       needsBuy:!turboCh&&!activeBoost,
