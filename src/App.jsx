@@ -2089,7 +2089,7 @@ export default function App(){
   // Load leaderboard when profile tab opens
   useEffect(()=>{
     if(tab==='profile'||tab==='refer'){
-      api.profile.getLeaderboard(50).then(data=>{setLbData(data);if(data?.yourRank)setTotalUsers(data.yourRank+50);}).catch(()=>{});
+      api.profile.getLeaderboard(50).then(data=>{setLbData(data);}).catch(()=>{});
     }
     if(tab==='refer'){
       // Sync real referral count and claimed tiers from backend
