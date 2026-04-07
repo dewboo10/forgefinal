@@ -2651,7 +2651,7 @@ if (typeof state.turbo_charges === 'number') setTurboCh(state.turbo_charges)
                     {
                       key:'surge',label:'3× Surge',icon:'⚡',
                       active:activeBoost?.label==='3× SURGE',
-                      badge:activeBoost?.label==='3× SURGE'?`${activeBoost.rem}s`:surgeCd?surgeCd:boostCh>0?'FREE':'20⭐',
+                      badge:activeBoost?.label==='3× SURGE'?`${activeBoost.rem}s`:surgeCd?surgeCd:boostCh>0?'FREE':'1⭐',
                       badgeColor:surgeCd?'#ff4d4d':boostCh>0?'#00c37b':'#ffc100',
                       sub:boostCh>0?'Free · 4h reset':surgeCd||'⭐ Stars',
                       canUse:mining&&!activeBoost&&!surgeCd&&boostCh>0,
