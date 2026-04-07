@@ -2080,26 +2080,83 @@ if (typeof state.turbo_charges === 'number') setTurboCh(state.turbo_charges)
   const surgeCd=surgeUsedAt&&!surgeReady?fmtCd(4*3600000-(now-surgeUsedAt)):null;
   const turboCd=turboUsedAt&&!turboReady?fmtCd(6*3600000-(now-turboUsedAt)):null;
 
-  // Refresh mining state when switching to mine tab — sync server balance
+  const lastRefresh = useRef(0);
+
+  // Refresh state and tab-specific data on tab change with debounce
   useEffect(()=>{
-    if(tab==='mine'&&apiLoaded){
-      api.mining.getState().then(s=>{
-        // Sync authoritative server balance (prevents drift from local ticker)
-        if(typeof s.balance === 'number' || typeof s.totalMined === 'number' || typeof s.blocks_found === 'number') {
-          setCommitted(c => ({
-            balance:      typeof s.balance === 'number' ? s.balance : c.balance,
-            totalMined:   typeof s.totalMined === 'number' ? s.totalMined : c.totalMined,
-            blocks:       typeof s.blocks_found === 'number' ? s.blocks_found : c.blocks,
-            sessionStart: c.sessionStart,
-          }));
+    const now = Date.now();
+    if (now - lastRefresh.current < 2000) return;
+    lastRefresh.current = now;
+    if (!apiLoaded) return;
+
+    async function refresh() {
+      try {
+        const state = await api.mining.getState();
+        setCommitted(prev => ({
+          balance:      Math.max(prev.balance, state.balance || 0),
+          totalMined:   Math.max(prev.totalMined, state.totalMined || state.total_mined || 0),
+          blocks:       Math.max(prev.blocks, state.blocks_found || 0),
+          sessionStart: state.mining && state.mining_start
+                          ? new Date(state.mining_start).getTime()
+                          : prev.sessionStart,
+        }));
+
+        const rawUpg = state.upgrades || state.upgrade_levels || {};
+        const normUpg = {};
+        Object.entries(rawUpg).forEach(([k,v]) => { normUpg[Number(k)]=v; normUpg[String(k)]=v; });
+        setUpgrades(normUpg);
+        setMining(!!state.mining);
+
+        if(tab==='mine' && state.offlineEarnings>0){
+          showToast('🤖','Auto-Mine Earnings',`+${fmt(state.offlineEarnings)} FRG offline`);
         }
-        const rawUpg2=s.upgrades||{};
-        const normUpg2={};
-        Object.entries(rawUpg2).forEach(([k,v])=>{normUpg2[Number(k)]=v;normUpg2[String(k)]=v;});
-        setUpgrades(normUpg2);
-        if(s.offlineEarnings>0){
-          showToast('🤖','Auto-Mine Earnings',`+${fmt(s.offlineEarnings)} FRG offline`);
-        }
+      } catch (e) {
+        console.error('Tab refresh mining state error:', e);
+      }
+    }
+
+    refresh();
+
+    if(tab==='profile'||tab==='refer'){
+      console.log('Fetching leaderboard');
+      api.profile.getLeaderboard(50).then(data=>{ console.log('Leaderboard loaded:', data); setLbData(data); }).catch((e)=>{ console.error('Leaderboard fetch error:', e); });
+    }
+    if(tab==='refer'){
+      // Sync real referral count and claimed tiers from backend
+      api.referrals.getTiers().then(tiers=>{
+        const claimed=new Set(tiers.filter(t=>t.claimed).map(t=>t.refs));
+        setClaimedTiers(claimed);
+      }).catch(()=>{});
+      api.referrals.getInfo().then(info=>{
+        setSimRefs(info.referralCount||info.ref_count||0);
+        if(info.referralCode||info.ref_code) setRefCode(info.referralCode||info.ref_code);
+        if(typeof info.referral_earnings==='number') setReferralEarnings(info.referral_earnings);
+      }).catch(()=>{});
+      // Load real friends list
+      api.referrals.getList().then(data=>{
+        if(data?.refs) setRefList(data.refs);
+      }).catch(()=>{});
+    }
+    if(tab==='missions'){
+      api.missions.getAll().then(data=>{
+        const loadedClaims = {};
+        (data.missions || []).forEach(m => {
+          const s = new Set();
+          (m.checkpoints || []).forEach(cp => {
+            if(cp.claimed) s.add(cp.index);
+          });
+          if(s.size > 0) loadedClaims[m.id] = s;
+        });
+        setCC(loadedClaims);
+      }).catch(()=>{});
+    }
+    if(tab==='store'){
+      // Sync purchased items from backend
+      api.store.getPurchased().then(data=>{
+        // Replace with backend truth — expirables disappear after expiry
+        const map={};
+        (data.purchased||[]).forEach(id=>{map[id]=true;});
+        setPurch(map);
       }).catch(()=>{});
     }
   },[tab,apiLoaded]);
@@ -2149,31 +2206,6 @@ if (typeof state.turbo_charges === 'number') setTurboCh(state.turbo_charges)
       }).catch(()=>{});
     }
   },[tab]);
-
-  // Refresh mining state on tab change to prevent desync
-  useEffect(() => {
-    async function refreshMiningState() {
-      try {
-        const state = await api.mining.getState();
-        setCommitted(prev => ({
-          balance:      Math.max(prev.balance, state.balance || 0),
-          totalMined:   Math.max(prev.totalMined, state.totalMined || state.total_mined || 0),
-          blocks:       Math.max(prev.blocks, state.blocks_found || 0),
-          sessionStart: state.mining && state.mining_start
-                          ? new Date(state.mining_start).getTime()
-                          : prev.sessionStart,
-        }));
-        const rawUpg = state.upgrades || state.upgrade_levels || {};
-        const normUpg = {};
-        Object.entries(rawUpg).forEach(([k,v]) => { normUpg[Number(k)]=v; normUpg[String(k)]=v; });
-        setUpgrades(normUpg);
-        setMining(!!state.mining);
-      } catch (e) {
-        // don't block UI
-      }
-    }
-    refreshMiningState();
-  }, [tab]);
 
   const toggle=async()=>{
     // Prevent toggling if API isn't loaded yet (avoids errors if user clicks too fast)
