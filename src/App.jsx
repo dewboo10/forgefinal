@@ -1627,12 +1627,15 @@ export default function App(){
 
   // Buy a Stars item — fetches invoice link from bot, opens Telegram payment
   const buyWithStars=useCallback(async(itemId)=>{
+    console.log('Buying with Stars:', itemId);
     try{
       const tg=window?.Telegram?.WebApp;
       const d=await api.store.getInvoice(itemId);
       if(!d.ok||!d.invoiceLink) throw new Error(d.error||'Failed to get invoice');
+      console.log('Invoice link received:', d.invoiceLink);
       if(tg?.openInvoice){
         tg.openInvoice(d.invoiceLink,(status)=>{
+          console.log('Stars payment status:', status);
           if(status==='paid'){showToast('⭐','Payment successful!','Item will activate shortly');}
           else if(status==='cancelled'){showToast('✕','Cancelled','No charge was made');}
           else if(status==='failed'){showToast('❌','Payment failed','Please try again');}
@@ -1641,6 +1644,7 @@ export default function App(){
         window.open(d.invoiceLink,'_blank');
       }
     }catch(e){
+      console.error('buyWithStars error:',e);
       showToast('❌','Stars payment failed',e.message);
       console.error('buyWithStars error:',e);
     }
@@ -1661,18 +1665,21 @@ export default function App(){
   // Auto-link wallet when connected
   useEffect(()=>{
     if(userFriendlyAddress){
-      api.wallet.linkWallet(userFriendlyAddress).catch(()=>{});
+      console.log('Linking wallet address:', userFriendlyAddress);
+      api.wallet.linkWallet(userFriendlyAddress).catch((e)=>{ console.error('Wallet link error:', e); });
     }
   },[userFriendlyAddress]);
 
   // ── On mount: auth + load state from backend ──────────────
   useEffect(()=>{
     async function init(){
+      console.log('Initializing app, logging in user');
       // Declare outside try so it's accessible in the wallet check below
       let loginResult = { isNewUser: false };
 
       try{
         loginResult = await api.auth.login();
+        console.log('Login successful, user:', loginResult.user);
         const user = loginResult.user;
 
         // Tell onboarding whether this is a brand new account
@@ -1768,8 +1775,10 @@ if (typeof state.turbo_charges === 'number') setTurboCh(state.turbo_charges)
         // Claim offline earnings if auto-mine active
         if((user.purchased||[]).some(p=>p.includes('auto'))){
           try{
+            console.log('Claiming offline earnings');
             const offline = await api.mining.claimOffline();
             if(offline.earned>0){
+              console.log('Offline earnings claimed:', offline.earned);
               setCommitted(c => ({
                 ...c,
                 balance:    c.balance + offline.earned,
@@ -1778,9 +1787,10 @@ if (typeof state.turbo_charges === 'number') setTurboCh(state.turbo_charges)
               }));
               showToast('🤖','Auto-Mine Earnings',`+${fmt(offline.earned)} FRG while offline`);
             }
-          }catch(e){}
+          }catch(e){ console.error('Claim offline error:', e); }
         }
 
+        console.log('App initialization complete');
         setApiLoaded(true);
 
       }catch(e){
@@ -1855,6 +1865,7 @@ if (typeof state.turbo_charges === 'number') setTurboCh(state.turbo_charges)
   const confirmPurchase=useCallback(async()=>{
     if(!pendingPurchase)return;
     const item=pendingPurchase;
+    console.log('Starting purchase for item:', item.id);
     setPendingPurchase(null);
     if(!userFriendlyAddress){
       try{ await tonConnectUI.connectWallet(); }catch(e){ showToast('❌','Wallet not connected','Please connect your TON wallet'); return; }
@@ -1891,6 +1902,7 @@ if (typeof state.turbo_charges === 'number') setTurboCh(state.turbo_charges)
         console.error('verifyPurchase returned error:', res);
         return;
       }
+      console.log('Purchase verified successfully:', res);
       // Handle one-time boost activations (not permanent purchases)
       if(item.id==='boost_surge'){
         setAB({mult:3,rem:60,label:'3× SURGE'});
@@ -1920,6 +1932,7 @@ if (typeof state.turbo_charges === 'number') setTurboCh(state.turbo_charges)
         addLog('info',`💎 ${item.name}: permanent`);
       }
     }catch(e){
+      console.error('Purchase error:',e);
       if(e.message?.includes('cancelled')||e.message?.includes('rejected')||e.code==='USER_REJECTED'){
         showToast('❌','Transaction cancelled','No payment was made');
       } else {
@@ -1959,7 +1972,9 @@ if (typeof state.turbo_charges === 'number') setTurboCh(state.turbo_charges)
     if(!mining) return;
     const hb = setInterval(async ()=>{
       try{
+        console.log('Sending heartbeat');
         const res = await api.mining.heartbeat();
+        console.log('Heartbeat response:', res);
         if(typeof res.balance === 'number'){
           setCommitted(c => ({
             balance:      res.balance,
@@ -1969,6 +1984,7 @@ if (typeof state.turbo_charges === 'number') setTurboCh(state.turbo_charges)
           }));
         }
       }catch(e){
+        console.error('Heartbeat error:', e);
         // silent — never crash on heartbeat failure
       }
     }, 20000);
@@ -2091,7 +2107,8 @@ if (typeof state.turbo_charges === 'number') setTurboCh(state.turbo_charges)
   // Load leaderboard when profile tab opens
   useEffect(()=>{
     if(tab==='profile'||tab==='refer'){
-      api.profile.getLeaderboard(50).then(data=>{setLbData(data);}).catch(()=>{});
+      console.log('Fetching leaderboard');
+      api.profile.getLeaderboard(50).then(data=>{ console.log('Leaderboard loaded:', data); setLbData(data); }).catch((e)=>{ console.error('Leaderboard fetch error:', e); });
     }
     if(tab==='refer'){
       // Sync real referral count and claimed tiers from backend
@@ -2162,6 +2179,7 @@ if (typeof state.turbo_charges === 'number') setTurboCh(state.turbo_charges)
     // Prevent toggling if API isn't loaded yet (avoids errors if user clicks too fast)
       if (!apiLoaded) return 
     if(!mining){
+      console.log('Mining started');
       setMining(true);setSessT(0);setSessE(0);
       setCommitted(c => ({ ...c, sessionStart: Date.now() }));
       // Track last active time for cooling mechanic
@@ -2171,6 +2189,7 @@ if (typeof state.turbo_charges === 'number') setTurboCh(state.turbo_charges)
       setCoolingWarning(false);
       try{ await api.mining.start(); }catch(e){ console.error('Start error:',e); }
     } else {
+      console.log('Mining stopped');
       setMining(false);
       const now=Date.now();
       setLastActiveAt(now);
@@ -2178,6 +2197,7 @@ if (typeof state.turbo_charges === 'number') setTurboCh(state.turbo_charges)
       try{
         const res=await api.mining.stop();
         if(res.earned>0){
+          console.log('Mining session ended, earned:', res.earned);
           setCommitted(c => ({
             balance:      typeof res.balance      === 'number' ? res.balance      : c.balance,
             totalMined:   typeof res.total_mined  === 'number' ? res.total_mined  : c.totalMined,
@@ -2204,9 +2224,11 @@ if (typeof state.turbo_charges === 'number') setTurboCh(state.turbo_charges)
   const claimReward=async()=>{
     if(!rewardPopup) return;
     const tier = rewardPopup;
+    console.log('Claiming referral reward for tier:', tier.refs);
     setClaimedTiers(s=>{const n=new Set(s);n.add(tier.refs);return n;});
     try{
       const res=await api.referrals.claimTier(tier.refs);
+      console.log('Referral reward claimed:', res);
       // Backend returns { ok, frg, reward } — apply FRG bonus to balance
       if(typeof res.frg==='number'){ setCommitted(c => ({ ...c, balance: c.balance + res.frg, totalMined: c.totalMined + res.frg })); }
     }catch(e){ console.error('Claim tier error:',e); }
@@ -2242,12 +2264,14 @@ if (typeof state.turbo_charges === 'number') setTurboCh(state.turbo_charges)
   const totalClaimable=MISSIONS.reduce((acc,m)=>{const prog=getMProg(m.key);const claimed=new Set(claimedCPs[m.id]||[]);return acc+m.checkpoints.filter((cp,i)=>prog>=cp.at&&!claimed.has(i)).length;},0);
 
   const claimCP=async(mId,cpIdx,reward)=>{
+    console.log('Claiming mission checkpoint:', mId, cpIdx, reward);
     setCC(prev=>{const s=new Set(prev[mId]||[]);s.add(cpIdx);return{...prev,[mId]:s};});
     setCommitted(c => ({ ...c, balance: c.balance + reward })); setMP(p=>p+reward);
     addParticle({x:window.innerWidth*.5,y:window.innerHeight*.4,label:`+${fmt(reward)}`});
     showToast('✅',`+${fmt(reward)} FRG`,'Checkpoint claimed!');
     try{
       const res=await api.missions.claimCheckpoint(mId,cpIdx);
+      console.log('Mission checkpoint claimed:', res);
       if(typeof res.newBalance==='number') setCommitted(c => ({ ...c, balance: res.newBalance }));
     }catch(e){ console.error('Mission claim error:',e); }
   };
@@ -2657,13 +2681,16 @@ if (typeof state.turbo_charges === 'number') setTurboCh(state.turbo_charges)
                       canUse:mining&&!activeBoost&&!surgeCd&&boostCh>0,
                       onTap: async () => {
                         if (!mining || activeBoost || surgeCd || !boostCh) return
+                        console.log('Activating surge boost');
                         try {
                           const res = await api.boosts.activate('surge')
+                          console.log('Surge boost activated:', res);
                           setAB({ mult: 3, rem: 60, label: '3× SURGE' })
                           setBoostCh(0)
                           setSurgeUsedAt(res.activatedAt)   // use server timestamp
                           showToast('⚡', '3× SURGE Active', '60 seconds')
                    } catch (e) {
+  console.error('Surge boost activation error:', e);
   const msg = e?.message || ''
   if (msg.includes('429') || msg.includes('Cooldown') || msg.includes('cooldown')) {
     showToast('⏳', 'Cooldown Active', 'Not ready yet')
@@ -2694,13 +2721,16 @@ if (typeof state.turbo_charges === 'number') setTurboCh(state.turbo_charges)
                       canUse:mining&&!activeBoost&&!turboCd&&turboCh>0,
                       onTap: async () => {
                         if (!mining || activeBoost || turboCd || !turboCh) return
+                        console.log('Activating turbo boost');
                         try {
                           const res = await api.boosts.activate('turbo')
+                          console.log('Turbo boost activated:', res);
                           setAB({ mult: 5, rem: 60, label: '5× SURGE' })
                           setTurboCh(0)
                           setTurboUsedAt(res.activatedAt)   // use server timestamp
                           showToast('🔥', '5× SURGE Active', '60 seconds')
                      } catch (e) {
+  console.error('Turbo boost activation error:', e);
   const msg = e?.message || ''
   if (msg.includes('429') || msg.includes('Cooldown') || msg.includes('cooldown')) {
     showToast('⏳', 'Cooldown Active', 'Not ready yet')
@@ -3057,14 +3087,16 @@ if (typeof state.turbo_charges === 'number') setTurboCh(state.turbo_charges)
                        const can=liveBalance>=cost&&!maxed;
                         return(
                           <div key={u.id} onClick={()=>can&&(async()=>{
+                            console.log('Buying upgrade:', u.id);
                             setCommitted(c => ({ ...c, balance: c.balance - cost }));
                             setUpgrades(p=>{const n={...p};n[u.id]=lv+1;n[String(u.id)]=lv+1;return n;});
                             showToast(u.icon,u.name,lv===0?'Activated!':`Level ${lv+1}`);
                             addLog('info',`◈ ${u.name} → Lv.${lv+1}`);
                             api.mining.buyUpgrade(u.id).then(res=>{
+                              console.log('Upgrade bought successfully:', res);
                               if(typeof res?.newBalance==='number') setCommitted(c => ({ ...c, balance: res.newBalance }));
                               if(res?.new_level !== undefined) setUpgrades(p=>{const n={...p};n[u.id]=res.new_level;n[String(u.id)]=res.new_level;return n;});
-                            }).catch(()=>{});
+                            }).catch((e)=>{ console.error('Buy upgrade error:', e); });
                           })()} style={{borderRadius:10,background:maxed?'rgba(0,195,123,.04)':can?'rgba(255,255,255,.04)':'rgba(255,255,255,.02)',border:`1px solid ${maxed?'rgba(0,195,123,.15)':can?'rgba(255,255,255,.1)':'rgba(255,255,255,.05)'}`,padding:'12px',cursor:can?'pointer':'default',WebkitTapHighlightColor:'transparent',position:'relative',overflow:'hidden'}}>
                             <svg style={{position:'absolute',top:0,right:0,opacity:.06,pointerEvents:'none'}} width="60" height="60" viewBox="0 0 60 60">
                               <circle cx="30" cy="30" r="24" fill="none" stroke={u.color} strokeWidth="1.2"/>
@@ -3801,10 +3833,16 @@ if (typeof state.turbo_charges === 'number') setTurboCh(state.turbo_charges)
                   {icon:'⚡',name:'Upgrades',sub:`${Object.keys(purchased).length} items · more available`,action:()=>setTab('store'),c:'#ffc100'},
                   {icon:'gift',name:'Daily Reward',sub:`Streak: ${streak} days`,action:async()=>{
                     try{
+                      console.log('Checking daily reward status');
                       const s=await api.profile.getDailyReward();
                       if(s.claimedToday){showToast('🎁','Already Claimed','Come back tomorrow!');}
-                      else{const r=await api.profile.claimDailyReward();setCommitted(c => ({ ...c, balance: c.balance + r.reward, totalMined: c.totalMined + r.reward }));if(r.streak) setStreak(r.streak);showToast('🎁',`+${fmt(r.reward)} FRG`,`Day ${r.streak||''} streak!`);}
-                    }catch(e){showToast('🎁','Claim failed','Try again');}
+                      else{
+                        console.log('Claiming daily reward');
+                        const r=await api.profile.claimDailyReward();
+                        console.log('Daily reward claimed:', r);
+                        setCommitted(c => ({ ...c, balance: c.balance + r.reward, totalMined: c.totalMined + r.reward }));if(r.streak) setStreak(r.streak);showToast('🎁',`+${fmt(r.reward)} FRG`,`Day ${r.streak||''} streak!`);
+                      }
+                    }catch(e){console.error('Daily reward error:', e); showToast('🎁','Claim failed','Try again');}
                   }},
                   {icon:'wallet',name:'TON Wallet',sub:userFriendlyAddress?`${userFriendlyAddress.slice(0,8)}…${userFriendlyAddress.slice(-4)}`:'Not connected',action:()=>{if(userFriendlyAddress)setWalletMenuOpen(true);else tonConnectUI.connectWallet().catch(()=>{});}},
                 ].map((item,i,arr)=>(

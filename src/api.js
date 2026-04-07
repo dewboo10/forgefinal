@@ -17,27 +17,13 @@ async function req(method, path, body) {
     headers['Content-Type'] = 'application/json'
   }
 
+  console.log(`API ${method} ${path}`, body ? { body } : '')
+
   const res = await fetch(`${BASE}${path}`, {
     method,
     headers,
     body: body !== undefined && body !== null ? JSON.stringify(body) : undefined,
   })
-
-//   if (!res.ok) {
-//     let errorText = `API ${method} ${path} → ${res.status}`
-//     try {
-//       const data = await res.json()
-//       if (data?.error || data?.detail) {
-//         errorText += `: ${data.error || data.detail}`
-//       }
-//     } catch (_err) {
-//       const text = await res.text().catch(() => '')
-//       if (text) errorText += `: ${text}`
-//     }
-//     throw new Error(errorText)
-//   }
-//   return res.json()
-// }
 
   if (!res.ok) {
     let data = {}
@@ -47,9 +33,12 @@ async function req(method, path, body) {
     err.status = res.status          // attach HTTP status
     err.remainingMs = data?.remainingMs  // attach cooldown data if present
     err.data = data
+    console.error(`API ${method} ${path} failed:`, err.message, err.data)
     throw err
   }
-  return res.json()
+  const result = await res.json()
+  console.log(`API ${method} ${path} success:`, result)
+  return result
 }
 
 // ─── AUTH ───────────────────────────────────────────────────
