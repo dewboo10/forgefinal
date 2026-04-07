@@ -2155,14 +2155,14 @@ if (typeof state.turbo_charges === 'number') setTurboCh(state.turbo_charges)
     async function refreshMiningState() {
       try {
         const state = await api.mining.getState();
-        setCommitted({
-          balance:      state.balance      || 0,
-          totalMined:   state.totalMined   || state.total_mined || 0,
-          blocks:       state.blocks_found || 0,
+        setCommitted(prev => ({
+          balance:      Math.max(prev.balance, state.balance || 0),
+          totalMined:   Math.max(prev.totalMined, state.totalMined || state.total_mined || 0),
+          blocks:       Math.max(prev.blocks, state.blocks_found || 0),
           sessionStart: state.mining && state.mining_start
                           ? new Date(state.mining_start).getTime()
-                          : null,
-        });
+                          : prev.sessionStart,
+        }));
         const rawUpg = state.upgrades || state.upgrade_levels || {};
         const normUpg = {};
         Object.entries(rawUpg).forEach(([k,v]) => { normUpg[Number(k)]=v; normUpg[String(k)]=v; });
