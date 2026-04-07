@@ -2161,52 +2161,6 @@ if (typeof state.turbo_charges === 'number') setTurboCh(state.turbo_charges)
     }
   },[tab,apiLoaded]);
 
-  // Load leaderboard when profile tab opens
-  useEffect(()=>{
-    if(tab==='profile'||tab==='refer'){
-      console.log('Fetching leaderboard');
-      api.profile.getLeaderboard(50).then(data=>{ console.log('Leaderboard loaded:', data); setLbData(data); }).catch((e)=>{ console.error('Leaderboard fetch error:', e); });
-    }
-    if(tab==='refer'){
-      // Sync real referral count and claimed tiers from backend
-      api.referrals.getTiers().then(tiers=>{
-        const claimed=new Set(tiers.filter(t=>t.claimed).map(t=>t.refs));
-        setClaimedTiers(claimed);
-      }).catch(()=>{});
-      api.referrals.getInfo().then(info=>{
-        setSimRefs(info.referralCount||info.ref_count||0);
-        if(info.referralCode||info.ref_code) setRefCode(info.referralCode||info.ref_code);
-        if(typeof info.referral_earnings==='number') setReferralEarnings(info.referral_earnings);
-      }).catch(()=>{});
-      // Load real friends list
-      api.referrals.getList().then(data=>{
-        if(data?.refs) setRefList(data.refs);
-      }).catch(()=>{});
-    }
-    if(tab==='missions'){
-      api.missions.getAll().then(data=>{
-        const loadedClaims = {};
-        (data.missions || []).forEach(m => {
-          const s = new Set();
-          (m.checkpoints || []).forEach(cp => {
-            if(cp.claimed) s.add(cp.index);
-          });
-          if(s.size > 0) loadedClaims[m.id] = s;
-        });
-        setCC(loadedClaims);
-      }).catch(()=>{});
-    }
-    if(tab==='store'){
-      // Sync purchased items from backend
-      api.store.getPurchased().then(data=>{
-        // Replace with backend truth — expirables disappear after expiry
-        const map={};
-        (data.purchased||[]).forEach(id=>{map[id]=true;});
-        setPurch(map);
-      }).catch(()=>{});
-    }
-  },[tab]);
-
   const toggle=async()=>{
     // Prevent toggling if API isn't loaded yet (avoids errors if user clicks too fast)
       if (!apiLoaded) return 
