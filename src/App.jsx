@@ -1709,6 +1709,10 @@ export default function App(){
         Object.entries(rawUpg).forEach(([k,v]) => { normUpg[Number(k)]=v; normUpg[String(k)]=v; });
         setUpgrades(normUpg);
 
+        // ── NEW: hydrate boost cooldowns from server so reload can't bypass them ──
+        if (state.surge_used_at) setSurgeUsedAt(state.surge_used_at)
+        if (state.turbo_used_at) setTurboUsedAt(state.turbo_used_at)
+
         if (state.mining) setMining(true);
 
         // Get accurate purchased state from store (handles expiry correctly)
@@ -2649,7 +2653,22 @@ export default function App(){
                       badgeColor:surgeCd?'#ff4d4d':boostCh>0?'#00c37b':'#ffc100',
                       sub:boostCh>0?'Free · 4h reset':surgeCd||'⭐ Stars',
                       canUse:mining&&!activeBoost&&!surgeCd&&boostCh>0,
-                      onTap:()=>{if(mining&&!activeBoost&&!surgeCd&&boostCh>0){setAB({mult:3,rem:60,label:'3× SURGE'});setBoostCh(0);setSurgeUsedAt(Date.now());showToast('⚡','3× SURGE Active','60 seconds');}},
+                      onTap: async () => {
+                        if (!mining || activeBoost || surgeCd || !boostCh) return
+                        try {
+                          const res = await api.boosts.activate('surge')
+                          setAB({ mult: 3, rem: 60, label: '3× SURGE' })
+                          setBoostCh(0)
+                          setSurgeUsedAt(res.activatedAt)   // use server timestamp
+                          showToast('⚡', '3× SURGE Active', '60 seconds')
+                        } catch (e) {
+                          if (e?.status === 429 || e?.remainingMs) {
+                            showToast('⏳', 'Cooldown Active', 'Not ready yet')
+                          } else {
+                            showToast('❌', 'Boost failed', 'Try again')
+                          }
+                        }
+                      },
                       onBuy:()=>buyWithStars('boost_surge'),
                       needsBuy:!boostCh&&!activeBoost,
                       ill:<svg width="60" height="60" viewBox="0 0 70 70">
@@ -2668,7 +2687,22 @@ export default function App(){
                       badgeColor:turboCd?'#ff4d4d':turboCh>0?'#00c37b':'#ffc100',
                       sub:turboCh>0?'Free · 6h reset':turboCd||'⭐ Stars',
                       canUse:mining&&!activeBoost&&!turboCd&&turboCh>0,
-                      onTap:()=>{if(mining&&!activeBoost&&!turboCd&&turboCh>0){setAB({mult:5,rem:60,label:'5× SURGE'});setTurboCh(0);setTurboUsedAt(Date.now());showToast('🔥','5× SURGE Active','60 seconds');}},
+                      onTap: async () => {
+                        if (!mining || activeBoost || turboCd || !turboCh) return
+                        try {
+                          const res = await api.boosts.activate('turbo')
+                          setAB({ mult: 5, rem: 60, label: '5× SURGE' })
+                          setTurboCh(0)
+                          setTurboUsedAt(res.activatedAt)   // use server timestamp
+                          showToast('🔥', '5× SURGE Active', '60 seconds')
+                        } catch (e) {
+                          if (e?.status === 429 || e?.remainingMs) {
+                            showToast('⏳', 'Cooldown Active', 'Not ready yet')
+                          } else {
+                            showToast('❌', 'Boost failed', 'Try again')
+                          }
+                        }
+                      },
                       onBuy:()=>buyWithStars('boost_turbo'),
                       needsBuy:!turboCh&&!activeBoost,
                       ill:<svg width="60" height="60" viewBox="0 0 70 70">

@@ -69,6 +69,11 @@ export const mining = {
   buyUpgrade: (upgradeId) => req('POST', '/api/mining/upgrades/buy', { upgradeId }),
 }
 
+// ─── BOOSTS ─────────────────────────────────────────────────
+export const boosts = {
+  activate: (boostType) => req('POST', '/api/mining/boost/activate', { boostType }),
+}
+
 // ─── STORE / TON PAYMENTS ───────────────────────────────────
 export const store = {
   // Get all store items + purchased status for user
