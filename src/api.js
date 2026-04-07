@@ -23,18 +23,31 @@ async function req(method, path, body) {
     body: body !== undefined && body !== null ? JSON.stringify(body) : undefined,
   })
 
+//   if (!res.ok) {
+//     let errorText = `API ${method} ${path} → ${res.status}`
+//     try {
+//       const data = await res.json()
+//       if (data?.error || data?.detail) {
+//         errorText += `: ${data.error || data.detail}`
+//       }
+//     } catch (_err) {
+//       const text = await res.text().catch(() => '')
+//       if (text) errorText += `: ${text}`
+//     }
+//     throw new Error(errorText)
+//   }
+//   return res.json()
+// }
+
   if (!res.ok) {
-    let errorText = `API ${method} ${path} → ${res.status}`
-    try {
-      const data = await res.json()
-      if (data?.error || data?.detail) {
-        errorText += `: ${data.error || data.detail}`
-      }
-    } catch (_err) {
-      const text = await res.text().catch(() => '')
-      if (text) errorText += `: ${text}`
-    }
-    throw new Error(errorText)
+    let data = {}
+    try { data = await res.json() } catch (_) {}
+    
+    const err = new Error(data?.error || data?.detail || `API ${method} ${path} → ${res.status}`)
+    err.status = res.status          // attach HTTP status
+    err.remainingMs = data?.remainingMs  // attach cooldown data if present
+    err.data = data
+    throw err
   }
   return res.json()
 }
