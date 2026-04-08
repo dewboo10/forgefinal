@@ -3340,11 +3340,11 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                     <div style={{margin:'0 20px 16px',padding:'14px',background:'rgba(255,255,255,.03)',borderRadius:10,border:'1px solid rgba(255,255,255,.07)'}}>
                       <div style={{fontSize:9,fontWeight:600,color:'rgba(255,255,255,.18)',letterSpacing:'.1em',textTransform:'uppercase',marginBottom:8}}>Your invite link</div>
                       <div style={{fontFamily:"'SF Mono',monospace",fontSize:10,color:'rgba(255,255,255,.35)',marginBottom:10,wordBreak:'break-all',lineHeight:1.5}}>
-                        {`t.me/${import.meta.env.VITE_BOT_URL?.replace('https://t.me/','')?.replace(/\//g,'')||'ForgeBot'}?start=ref_${refCode||'loading...'}`}
+                        {`t.me/${import.meta.env.VITE_BOT_URL?.replace('https://t.me/','')?.replace(/\//g,'')||'ForgeBot'}?startapp=ref_${refCode||'loading...'}`}
                       </div>
                       <div style={{display:'flex',gap:8}}>
                         <button onClick={()=>{
-                          const link=`https://t.me/${import.meta.env.VITE_BOT_URL?.replace('https://t.me/','')?.split('/')[0]||'ForgeBot'}?start=ref_${refCode}`;
+                          const link=`https://t.me/${import.meta.env.VITE_BOT_URL?.replace('https://t.me/','')?.split('/')[0]||'ForgeBot'}?startapp=ref_${refCode}`;
                           navigator.clipboard?.writeText(link).catch(()=>{});
                           setCopied(true);setTimeout(()=>setCopied(false),2500);
                           showToast('📋','Link Copied!','Share it to earn FRG');
@@ -3352,7 +3352,7 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                           {copied?'✓ Copied':'Copy Link'}
                         </button>
                         <button onClick={()=>{
-                          const link=`https://t.me/${import.meta.env.VITE_BOT_URL?.replace('https://t.me/','')?.split('/')[0]||'ForgeBot'}?start=ref_${refCode}`;
+                          const link=`https://t.me/${import.meta.env.VITE_BOT_URL?.replace('https://t.me/','')?.split('/')[0]||'ForgeBot'}?startapp=ref_${refCode}`;
                           const text=encodeURIComponent(`⛏ Mine FRG with me on Forge — early miners earn the most before the next halving!\n\n${link}`);
                           window.Telegram?.WebApp?.openTelegramLink?.(`https://t.me/share/url?url=${link}&text=${text}`);
                         }} style={{flex:1,padding:'9px',borderRadius:8,background:'#00c37b',border:'none',color:'#000',fontSize:11,fontWeight:700,cursor:'pointer'}}>
@@ -3481,7 +3481,7 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                       );
                     })}
                     <div onClick={()=>{
-                      const link=`https://t.me/${import.meta.env.VITE_BOT_URL?.replace('https://t.me/','')?.split('/')[0]||'ForgeBot'}?start=ref_${refCode}`;
+                      const link=`https://t.me/${import.meta.env.VITE_BOT_URL?.replace('https://t.me/','')?.split('/')[0]||'ForgeBot'}?startapp=ref_${refCode}`;
                       window.Telegram?.WebApp?.openTelegramLink?.(`https://t.me/share/url?url=${link}`);
                     }} style={{padding:'12px 20px',display:'flex',alignItems:'center',gap:11,cursor:'pointer',WebkitTapHighlightColor:'transparent'}}>
                       <div style={{width:34,height:34,borderRadius:'50%',border:'1px dashed rgba(255,255,255,.12)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:16,color:'#00c37b',flexShrink:0}}>+</div>
