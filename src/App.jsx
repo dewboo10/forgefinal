@@ -1777,6 +1777,12 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
             if(s.size > 0) loadedClaims[m.id] = s;
           });
           setCC(loadedClaims);
+          // Initialize missionPoints from loaded claims so previous sessions are counted
+          const loadedMP = MISSIONS.reduce((acc, m) => {
+            const claimed = loadedClaims[m.id] || new Set();
+            return acc + m.checkpoints.reduce((s, cp, i) => s + (claimed.has(i) ? cp.r : 0), 0);
+          }, 0);
+          if (loadedMP > 0) setMP(loadedMP);
         }catch(e){}
 
         // If mining was already active when user opens app, set session start
@@ -3795,7 +3801,7 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                   <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 0 0'}}>
                     <span style={{fontSize:12,fontWeight:700,color:'rgba(255,255,255,.5)'}}>Total</span>
                   <span style={{fontSize:16,fontWeight:800,color:'#fff'}}>
-  {fmt(liveTotalMined+(hasAutoMine?Math.floor(liveTotalMined*.3):0)+(referralEarnings||simRefs*1240)+missionPoints)} FRG
+  {fmt(liveBalance)} FRG
 </span>
                   </div>
                 </div>
