@@ -1731,7 +1731,10 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
         if (state.boost) {
           const mult = state.boost.type === 'turbo' ? 5 : 3;
           const rem = Math.max(0, Math.floor((new Date(state.boost.until) - Date.now()) / 1000));
-          if (rem > 0) setAB({ mult, rem, label: state.boost.type === 'turbo' ? '5× TURBO' : '3× SURGE' });
+          if (rem > 0) {
+            const boostActivatedAt = state.mining_start ? new Date(state.mining_start).getTime() : Date.now();
+            setAB({ mult, rem, label: state.boost.type === 'turbo' ? '5× TURBO' : '3× SURGE', activatedAt: boostActivatedAt });
+          }
         }
 
         // Get accurate purchased state from store (handles expiry correctly)
@@ -1958,8 +1961,22 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
   const permMult=purchased['speed_perm']?2:1;
   const effectiveRate=(baseRate+upgradeRate)*(activeBoost?.mult||1)*permMult*halvingMult;
   const elapsedSecs = sessionStart ? Math.max(0,(nowMs-sessionStart)/1000) : 0;
-  const liveBalance = balance + (mining ? elapsedSecs * effectiveRate : 0);
-  const liveTotalMined = totalMined + (mining ? elapsedSecs * effectiveRate : 0);
+  // Split earnings into pre-boost (base rate) and post-boost (boosted rate) segments.
+  // Without this split, activating a boost retroactively applies the multiplier to all
+  // elapsed time since the last heartbeat, causing an instant visual jump then snap-back.
+  let pendingEarnings = 0;
+  if (mining && elapsedSecs > 0) {
+    const baseEffRate = (baseRate + upgradeRate) * permMult * halvingMult;
+    if (activeBoost?.activatedAt && activeBoost.activatedAt > (sessionStart || 0)) {
+      const preBoostSecs  = Math.max(0, (activeBoost.activatedAt - (sessionStart || 0)) / 1000);
+      const postBoostSecs = Math.max(0, (nowMs - activeBoost.activatedAt) / 1000);
+      pendingEarnings = preBoostSecs * baseEffRate + postBoostSecs * effectiveRate;
+    } else {
+      pendingEarnings = elapsedSecs * effectiveRate;
+    }
+  }
+  const liveBalance    = balance    + pendingEarnings;
+  const liveTotalMined = totalMined + pendingEarnings;
   // Keep miningRef in sync so heartbeat interval can check it without stale closure
   useEffect(()=>{ miningRef.current=mining; },[mining]);
   // Ref so mining interval always reads latest rate without restarting
@@ -2106,14 +2123,20 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
     async function refresh() {
       try {
         const state = await api.mining.getState();
-        setCommitted(prev => ({
-          balance:      Math.max(prev.balance, state.balance || 0),
-          totalMined:   Math.max(prev.totalMined, state.totalMined || state.total_mined || 0),
-          blocks:       Math.max(prev.blocks, state.blocks_found || 0),
-          sessionStart: state.mining && state.mining_start
-                          ? new Date(state.mining_start).getTime()
-                          : prev.sessionStart,
-        }));
+        setCommitted(prev => {
+          const serverMiningStart = state.mining && state.mining_start
+            ? new Date(state.mining_start).getTime() : null;
+          // When we reset sessionStart to the server's value we MUST also use the
+          // server's balance — otherwise the pair is mismatched and the elapsed-time
+          // calculation double-counts against a locally-inflated base, causing the
+          // value to jump high then snap back on the next heartbeat.
+          return {
+            balance:      serverMiningStart ? (state.balance || 0) : Math.max(prev.balance, state.balance || 0),
+            totalMined:   Math.max(prev.totalMined, state.totalMined || state.total_mined || 0),
+            blocks:       Math.max(prev.blocks, state.blocks_found || 0),
+            sessionStart: serverMiningStart ?? prev.sessionStart,
+          };
+        });
 
         const rawUpg = state.upgrades || state.upgrade_levels || {};
         const normUpg = {};
@@ -2125,7 +2148,11 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
         if (state.boost) {
           const mult = state.boost.type === 'turbo' ? 5 : 3;
           const rem = Math.max(0, Math.floor((new Date(state.boost.until) - Date.now()) / 1000));
-          if (rem > 0) setAB(b => (!b || b.rem < rem) ? { mult, rem, label: state.boost.type === 'turbo' ? '5× TURBO' : '3× SURGE' } : b);
+          if (rem > 0) {
+            // activatedAt = sessionStart so the split-calc treats entire current window as boosted
+            const boostActivatedAt = state.mining_start ? new Date(state.mining_start).getTime() : Date.now();
+            setAB(b => (!b || b.rem < rem) ? { mult, rem, label: state.boost.type === 'turbo' ? '5× TURBO' : '3× SURGE', activatedAt: boostActivatedAt } : b);
+          }
         } else {
           setAB(null);
         }
@@ -2691,7 +2718,7 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                         try {
                           const res = await api.boosts.activate('surge')
                           console.log('Surge boost activated:', res);
-                          setAB({ mult: 3, rem: 60, label: '3× SURGE' })
+                          setAB({ mult: 3, rem: 60, label: '3× SURGE', activatedAt: Date.now() })
                           setBoostCh(0)
                           setSurgeUsedAt(res.activatedAt)   // use server timestamp
                           showToast('⚡', '3× SURGE Active', '60 seconds')
@@ -2731,7 +2758,7 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                         try {
                           const res = await api.boosts.activate('turbo')
                           console.log('Turbo boost activated:', res);
-                          setAB({ mult: 5, rem: 60, label: '5× SURGE' })
+                          setAB({ mult: 5, rem: 90, label: '5× TURBO', activatedAt: Date.now() })
                           setTurboCh(0)
                           setTurboUsedAt(res.activatedAt)   // use server timestamp
                           showToast('🔥', '5× SURGE Active', '60 seconds')
@@ -3789,7 +3816,9 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                     );
                   })}
                 </div>
+                
                 {/* Stats grid */}
+                
                 <div style={{padding:'14px 20px',borderBottom:'1px solid rgba(255,255,255,.05)'}}>
                   <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
                     <div style={{fontSize:9,fontWeight:600,color:'rgba(255,255,255,.18)',letterSpacing:'.12em',textTransform:'uppercase'}}>Stats</div>
@@ -3879,6 +3908,7 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
         <div className="tabbar">
 
           {/* MINE — pickaxe striking block with sparks */}
+          
           <button className={`tab${tab==='mine'?' active':''}`} onClick={()=>setTab('mine')}>
             <div className="tab-pip"/>
             <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
@@ -3897,6 +3927,7 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
           </button>
 
           {/* UPGRADE — server rack with glowing active unit */}
+
           <button className={`tab${tab==='store'?' active':''}`} onClick={()=>setTab('store')}>
             <div className="tab-pip"/>
             <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
