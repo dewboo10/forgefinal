@@ -2189,15 +2189,18 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
     }
     if(tab==='missions'){
       api.missions.getAll().then(data=>{
-        const loadedClaims = {};
-        (data.missions || []).forEach(m => {
-          const s = new Set();
-          (m.checkpoints || []).forEach(cp => {
-            if(cp.claimed) s.add(cp.index);
+        // Merge server claimed state with local state — never remove a locally-claimed
+        // checkpoint here, because the claim API call might still be in-flight and the
+        // server fetch would race with it and show the button again.
+        setCC(prev=>{
+          const merged={...prev};
+          (data.missions||[]).forEach(m=>{
+            const s=new Set(prev[m.id]||[]);
+            (m.checkpoints||[]).forEach(cp=>{ if(cp.claimed) s.add(cp.index); });
+            if(s.size>0) merged[m.id]=s;
           });
-          if(s.size > 0) loadedClaims[m.id] = s;
+          return merged;
         });
-        setCC(loadedClaims);
       }).catch(()=>{});
     }
     if(tab==='store'){
@@ -2293,20 +2296,34 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
   };
 
   // Mission progress
- const getMProg=(key)=>{ if(key==='total')return liveTotalMined; if(key==='blocks')return blocks; if(key==='time_mins')return Math.floor(sessT/60); if(key==='rate')return effectiveRate; if(key==='refs')return simRefs; return 0; };
+ // Use server-confirmed values (not live) for mission progress checks so the claim
+ // button only appears when the server will actually accept the claim. liveTotalMined
+ // includes unconfirmed pending earnings — if we used that, the button could appear
+ // before the server has credited the amount, causing silent 400 "not reached" rejects.
+ const getMProg=(key)=>{ if(key==='total')return totalMined; if(key==='blocks')return blocks; if(key==='time_mins')return Math.floor(sessT/60); if(key==='rate')return effectiveRate; if(key==='refs')return simRefs; return 0; };
   const totalClaimable=MISSIONS.reduce((acc,m)=>{const prog=getMProg(m.key);const claimed=new Set(claimedCPs[m.id]||[]);return acc+m.checkpoints.filter((cp,i)=>prog>=cp.at&&!claimed.has(i)).length;},0);
 
   const claimCP=async(mId,cpIdx,reward)=>{
     console.log('Claiming mission checkpoint:', mId, cpIdx, reward);
+    // Mark claimed optimistically so the button disappears immediately
     setCC(prev=>{const s=new Set(prev[mId]||[]);s.add(cpIdx);return{...prev,[mId]:s};});
-    setCommitted(c => ({ ...c, balance: c.balance + reward })); setMP(p=>p+reward);
+    // NOTE: do NOT touch committed.balance here — a heartbeat can fire between now and the
+    // API response and would overwrite the balance with the server value (pre-reward),
+    // causing a visible drop. Instead, wait for the server to confirm and set it once.
+    setMP(p=>p+reward);
     addParticle({x:window.innerWidth*.5,y:window.innerHeight*.4,label:`+${fmt(reward)}`});
     showToast('✅',`+${fmt(reward)} FRG`,'Checkpoint claimed!');
     try{
       const res=await api.missions.claimCheckpoint(mId,cpIdx);
       console.log('Mission checkpoint claimed:', res);
+      // Set balance from server truth (includes the reward + any heartbeat credits)
       if(typeof res.newBalance==='number') setCommitted(c => ({ ...c, balance: res.newBalance }));
-    }catch(e){ console.error('Mission claim error:',e); }
+    }catch(e){
+      // Server rejected — roll back the local optimistic claim so the button reappears
+      setCC(prev=>{const s=new Set(prev[mId]||[]);s.delete(cpIdx);return{...prev,[mId]:s};});
+      setMP(p=>p-reward);
+      console.error('Mission claim error:',e);
+    }
   };
 
   // Milestone
