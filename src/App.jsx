@@ -1623,6 +1623,7 @@ export default function App(){
   const mineR=useRef(null),sesR=useRef(null),boostR=useRef(null);
   const circleRef=useRef(null);
   const prevBal=useRef(0),prevBlocks=useRef(0),prevMining=useRef(false);
+  const miningRef=useRef(false); // ref-mirror of `mining` for use inside intervals
 
   const showToast=useCallback((icon,title,sub)=>{setToast({icon,title,sub});setTimeout(()=>setToast(null),3200);},[])
 
@@ -1959,6 +1960,8 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
   const elapsedSecs = sessionStart ? Math.max(0,(nowMs-sessionStart)/1000) : 0;
   const liveBalance = balance + (mining ? elapsedSecs * effectiveRate : 0);
   const liveTotalMined = totalMined + (mining ? elapsedSecs * effectiveRate : 0);
+  // Keep miningRef in sync so heartbeat interval can check it without stale closure
+  useEffect(()=>{ miningRef.current=mining; },[mining]);
   // Ref so mining interval always reads latest rate without restarting
   const effectiveRateRef=useRef(effectiveRate);
   useEffect(()=>{effectiveRateRef.current=effectiveRate;},[effectiveRate]);
@@ -1981,6 +1984,7 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
   useEffect(()=>{
     if(!mining) return;
     const hb = setInterval(async ()=>{
+      if(!miningRef.current) return; // guard: don't send after stop (stale interval)
       try{
         console.log('Sending heartbeat');
         const res = await api.mining.heartbeat();
