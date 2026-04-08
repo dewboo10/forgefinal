@@ -647,29 +647,35 @@ function RewardPopup({tier,onClose}){
 /* ═══ SECURITY CIRCLE ═══ */
 function SecurityCircle({onShowToast}){
   const COLORS=['#5ec98a','#5ba8e8','#c07cf0','#e06c4c','#FFB800'];
-  const [circle,setCircle]=useState(MOCK_CIRCLE);
-  const [incoming,setIncoming]=useState([
-    {id:101,name:'CryptoKev',avatar:'C',color:'#c07cf0',since:'2 min ago'},
-    {id:102,name:'Miner_Riya',avatar:'R',color:'#FFB800',since:'14 min ago'},
-  ]);
+  const [circle,setCircle]=useState([]);
+  const [incoming,setIncoming]=useState([]);
+  const [loading,setLoading]=useState(true);
   // Load from backend
   useEffect(()=>{
     api.circle.getCircle().then(data=>{
-      if(data.members?.length>0){
-        setCircle(data.members.map(m=>({
-          id:m.memberId,name:m.name,trusted:m.verified,
-          avatar:(m.name||'?')[0].toUpperCase(),
-          color:COLORS[m.memberId%5]||'#5ec98a',
+      setCircle((data.members||[]).map(m=>{
+        const name=m.first_name||m.username||'Unknown';
+        return {
+          id:m.member_id,
+          name,
+          trusted:m.trusted,
+          avatar:name[0].toUpperCase(),
+          color:COLORS[Number(m.member_id)%5]||'#5ec98a',
           pending:false,
-        })));
-      }
-      if(data.incoming?.length>0){
-        setIncoming(data.incoming.map(r=>({
-          id:r.id,name:r.name,avatar:(r.name||'?')[0].toUpperCase(),
-          color:COLORS[r.senderId%5]||'#c07cf0',since:new Date(r.since).toLocaleTimeString(),
-        })));
-      }
-    }).catch(()=>{});
+        };
+      }));
+      setIncoming((data.incoming_requests||[]).map(r=>{
+        const name=r.first_name||r.username||'Unknown';
+        return {
+          id:r.id,
+          fromId:r.from_id,
+          name,
+          avatar:name[0].toUpperCase(),
+          color:COLORS[Number(r.from_id)%5]||'#c07cf0',
+          since:new Date(r.created_at).toLocaleTimeString(),
+        };
+      }));
+    }).catch(()=>{}).finally(()=>setLoading(false));
   },[]);
   const [addInput,setAddInput]=useState('');
   const [adding,setAdding]=useState(false);
@@ -681,12 +687,18 @@ function SecurityCircle({onShowToast}){
 
   const handleAdd=async()=>{
     if(!addInput.trim()||filledSlots>=5) return;
-    const nm={id:Date.now(),name:addInput.trim(),trusted:false,pending:true,avatar:addInput[0].toUpperCase(),color:COLORS[filledSlots%5]};
-    setCircle(p=>[...p,nm]); setAddInput(''); setAdding(false);
-    onShowToast('📡','Invite Sent!',`${nm.name} will receive your request`);
+    const input=addInput.trim();
+    setAddInput(''); setAdding(false);
     try{
-      await api.circle.invite(addInput.trim());
-    }catch(e){ console.error('Circle invite error:',e); }
+      const res=await api.circle.invite(input);
+      const displayName=res.invitedName||input;
+      const nm={id:Date.now(),name:displayName,trusted:false,pending:true,avatar:displayName[0].toUpperCase(),color:COLORS[filledSlots%5]};
+      setCircle(p=>[...p,nm]);
+      onShowToast('📡','Invite Sent!',`${displayName} will receive your request`);
+    }catch(e){
+      console.error('Circle invite error:',e);
+      onShowToast('❌','Not Found',e.message||'User not found — try their Telegram ID');
+    }
   };
 
   const acceptRequest=async(req)=>{
@@ -709,9 +721,11 @@ function SecurityCircle({onShowToast}){
     try{ await api.circle.remove(id); }catch(e){ console.error('Circle remove error:',e); }
   };
 
+  if(loading) return <div className="sc-card" style={{textAlign:'center',padding:'32px 0',fontFamily:'var(--f)',fontSize:10,color:'var(--tx3)'}}>Loading circle...</div>;
+
   return (
     <div className="sc-card">
-      
+
       <div className="sc-header">
         <div>
           <div className="sc-title">SECURITY CIRCLE</div>
