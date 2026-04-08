@@ -1594,6 +1594,7 @@ export default function App(){
   const [now,setNow]=useState(Date.now());
   const [nowMs,setNowMs]=useState(() => Date.now());
   const [activeBoost,setAB]=useState(null);
+  const [halvingMult,setHalvingMult]=useState(1);
   const [netHash,setNetHash]=useState(912.4);
   const [showLegacy,setLegacy]=useState(false);
   const [simRefs,setSimRefs]=useState(0);
@@ -1721,8 +1722,16 @@ export default function App(){
         if (state.turbo_used_at) setTurboUsedAt(state.turbo_used_at)
 if (typeof state.boost_charges === 'number') setBoostCh(state.boost_charges)
 if (typeof state.turbo_charges === 'number') setTurboCh(state.turbo_charges)
+if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
 
         if (state.mining) setMining(true);
+
+        // Hydrate active boost so rate display is correct after reload
+        if (state.boost) {
+          const mult = state.boost.type === 'turbo' ? 5 : 3;
+          const rem = Math.max(0, Math.floor((new Date(state.boost.until) - Date.now()) / 1000));
+          if (rem > 0) setAB({ mult, rem, label: state.boost.type === 'turbo' ? '5× TURBO' : '3× SURGE' });
+        }
 
         // Get accurate purchased state from store (handles expiry correctly)
         try{
@@ -1781,9 +1790,10 @@ if (typeof state.turbo_charges === 'number') setTurboCh(state.turbo_charges)
               console.log('Offline earnings claimed:', offline.earned);
               setCommitted(c => ({
                 ...c,
-                balance:    c.balance + offline.earned,
-                totalMined: c.totalMined + offline.earned,
-                blocks:     typeof offline.blocks_found === 'number' ? offline.blocks_found : c.blocks,
+                balance:      typeof offline.balance      === 'number' ? offline.balance      : c.balance + offline.earned,
+                totalMined:   typeof offline.total_mined  === 'number' ? offline.total_mined  : c.totalMined + offline.earned,
+                blocks:       typeof offline.blocks_found === 'number' ? offline.blocks_found : c.blocks,
+                sessionStart: Date.now(), // claimOffline reset mining_start to NOW() on server
               }));
               showToast('🤖','Auto-Mine Earnings',`+${fmt(offline.earned)} FRG while offline`);
             }
@@ -1945,7 +1955,7 @@ if (typeof state.turbo_charges === 'number') setTurboCh(state.turbo_charges)
   const baseRate=0.1;
   const upgradeRate=UPGRADES.reduce((acc,u)=>{const lv=upgrades[u.id]||upgrades[String(u.id)]||0;return acc+u.rateBonus*lv;},0);
   const permMult=purchased['speed_perm']?2:1;
-  const effectiveRate=(baseRate+upgradeRate)*(activeBoost?.mult||1)*permMult;
+  const effectiveRate=(baseRate+upgradeRate)*(activeBoost?.mult||1)*permMult*halvingMult;
   const elapsedSecs = sessionStart ? Math.max(0,(nowMs-sessionStart)/1000) : 0;
   const liveBalance = balance + (mining ? elapsedSecs * effectiveRate : 0);
   const liveTotalMined = totalMined + (mining ? elapsedSecs * effectiveRate : 0);
@@ -2106,6 +2116,15 @@ if (typeof state.turbo_charges === 'number') setTurboCh(state.turbo_charges)
         Object.entries(rawUpg).forEach(([k,v]) => { normUpg[Number(k)]=v; normUpg[String(k)]=v; });
         setUpgrades(normUpg);
         setMining(!!state.mining);
+        if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult);
+        // Hydrate active boost on tab switch so rate stays accurate
+        if (state.boost) {
+          const mult = state.boost.type === 'turbo' ? 5 : 3;
+          const rem = Math.max(0, Math.floor((new Date(state.boost.until) - Date.now()) / 1000));
+          if (rem > 0) setAB(b => (!b || b.rem < rem) ? { mult, rem, label: state.boost.type === 'turbo' ? '5× TURBO' : '3× SURGE' } : b);
+        } else {
+          setAB(null);
+        }
 
         if(tab==='mine' && state.offlineEarnings>0){
           showToast('🤖','Auto-Mine Earnings',`+${fmt(state.offlineEarnings)} FRG offline`);
@@ -2182,15 +2201,13 @@ if (typeof state.turbo_charges === 'number') setTurboCh(state.turbo_charges)
       localStorage.setItem('forge_last_active',now);
       try{
         const res=await api.mining.stop();
-        if(res.earned>0){
-          console.log('Mining session ended, earned:', res.earned);
-          setCommitted(c => ({
-            balance:      typeof res.balance      === 'number' ? res.balance      : c.balance,
-            totalMined:   typeof res.total_mined  === 'number' ? res.total_mined  : c.totalMined,
-            blocks:       typeof res.blocks_found === 'number' ? res.blocks_found : c.blocks,
-            sessionStart: null,
-          }));
-        }
+        console.log('Mining session ended, earned:', res.earned);
+        setCommitted(c => ({
+          balance:      typeof res.balance      === 'number' ? res.balance      : c.balance,
+          totalMined:   typeof res.total_mined  === 'number' ? res.total_mined  : c.totalMined,
+          blocks:       typeof res.blocks_found === 'number' ? res.blocks_found : c.blocks,
+          sessionStart: null, // always clear regardless of earned amount
+        }));
       }catch(e){ console.error('Stop error:',e); }
     }
   };
@@ -2234,11 +2251,10 @@ if (typeof state.turbo_charges === 'number') setTurboCh(state.turbo_charges)
       // Give permanent 2x — sets purchased.speed_perm which is read by permMult
       setPurch(p=>({...p,speed_perm:true}));
     }
-    // FRG bonus from subReward
+    // Particle only — balance already updated from res.frg above (don't add twice)
     const octMatch = tier.subReward.replace(/,/g,'').match(/\+?(\d+)\s*FRG/);
     if(octMatch){
       const octBonus=parseInt(octMatch[1]);
-      setCommitted(c => ({ ...c, balance: c.balance + octBonus }));
       addParticle({x:window.innerWidth*.5,y:window.innerHeight*.38,label:`+${fmt(octBonus)} FRG`});
     }
     showToast(tier.icon,`${tier.reward} ACTIVATED!`,tier.subReward);
