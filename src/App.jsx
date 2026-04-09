@@ -2198,9 +2198,11 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
     }
     if(tab==='refer'){
       // Sync real referral count and claimed tiers from backend
-      api.referrals.getTiers().then(tiers=>{
-        const claimed=new Set(tiers.filter(t=>t.claimed).map(t=>t.refs));
+      api.referrals.getTiers().then(res=>{
+        const list = Array.isArray(res) ? res : (res.tiers || []);
+        const claimed=new Set(list.filter(t=>t.claimed).map(t=>t.refs));
         setClaimedTiers(claimed);
+        if(res.ref_count!=null) setSimRefs(res.ref_count);
       }).catch(()=>{});
       api.referrals.getInfo().then(info=>{
         setSimRefs(info.referralCount||info.ref_count||0);
