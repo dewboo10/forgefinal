@@ -2239,6 +2239,15 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
     }
   },[tab,apiLoaded]);
 
+  // Auto-refresh leaderboard every 5 minutes while on leaderboard sub-tab
+  useEffect(()=>{
+    if(tab!=='refer'||teamTab!=='leaderboard') return;
+    const id=setInterval(()=>{
+      api.profile.getLeaderboard(50).then(setLbData).catch(()=>{});
+    }, 5*60*1000);
+    return ()=>clearInterval(id);
+  },[tab,teamTab]);
+
   const toggle=async()=>{
     // Prevent toggling if API isn't loaded yet (avoids errors if user clicks too fast)
       if (!apiLoaded) return 
@@ -3311,7 +3320,7 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                 {/* Sub-tabs */}
                 <div style={{display:'flex',borderBottom:'1px solid rgba(255,255,255,.05)'}}>
                   {[['refer','Refer & Earn'],['leaderboard','Leaderboard']].map(([id,lbl])=>(
-                    <button key={id} onClick={()=>setTeamTab(id)} style={{flex:1,padding:'12px',fontSize:12,fontWeight:600,color:teamTab===id?'#00c37b':'rgba(255,255,255,.25)',background:'none',border:'none',borderBottom:`2px solid ${teamTab===id?'#00c37b':'transparent'}`,cursor:'pointer',WebkitTapHighlightColor:'transparent',transition:'all .15s'}}>
+                    <button key={id} onClick={()=>{ setTeamTab(id); if(id==='leaderboard'){ setLbData(null); api.profile.getLeaderboard(50).then(setLbData).catch(()=>{}); } }} style={{flex:1,padding:'12px',fontSize:12,fontWeight:600,color:teamTab===id?'#00c37b':'rgba(255,255,255,.25)',background:'none',border:'none',borderBottom:`2px solid ${teamTab===id?'#00c37b':'transparent'}`,cursor:'pointer',WebkitTapHighlightColor:'transparent',transition:'all .15s'}}>
                       {lbl}
                     </button>
                   ))}
@@ -3509,13 +3518,8 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                         <div style={{fontSize:9,color:'rgba(255,255,255,.2)'}}>Your rank</div>
                       </div>}
                     </div>
-                    {(lbData?.leaderboard||[
-                      {name:'0xVault',totalMined:9847291,badge:'SOVEREIGN'},
-                      {name:'DeepNode_7',totalMined:6234881,badge:'ELITE'},
-                      {name:'Nakamura_X',totalMined:4102334,badge:'ELITE'},
-                      {name:'GridMaster',totalMined:2987001,badge:'MINER'},
-                      {name:'CryptoZen',totalMined:1843201,badge:'MINER'},
-                    ]).slice(0,100).map((l,i)=>{
+                    {!lbData&&<div style={{padding:'40px 20px',textAlign:'center',color:'rgba(255,255,255,.25)',fontSize:12}}>Loading...</div>}
+                    {(lbData?.leaderboard||[]).slice(0,100).map((l,i)=>{
                       const you=l.isYou||(lbData?.yourRank&&l.rank===lbData.yourRank);
                       return(
                         <div key={i} style={{padding:'11px 20px',display:'flex',alignItems:'center',gap:11,borderBottom:'1px solid rgba(255,255,255,.04)',background:you?'rgba(0,195,123,.04)':'transparent'}}>
