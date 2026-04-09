@@ -42,12 +42,14 @@ async function req(method, path, body) {
 }
 
 // ─── AUTH ───────────────────────────────────────────────────
+
 export const auth = {
   // Validate Telegram initData and get/create user
   login: (startParam) => req('POST', '/api/auth/login', startParam ? { startParam } : undefined),
 }
 
 // ─── MINING ─────────────────────────────────────────────────
+
 export const mining = {
   // Get current balance, rate, upgrades, auto-mine status
   getState: () => req('GET', '/api/mining/state'),
@@ -72,12 +74,14 @@ export const mining = {
 }
 
 // ─── BOOSTS ─────────────────────────────────────────────────
+
 export const boosts = {
   activate: (boostType) => req('POST', '/api/mining/boost/activate', { boostType }),
 }
 
 
 // ─── STORE / TON PAYMENTS ───────────────────────────────────
+
 export const store = {
   // Get all store items + purchased status for user
   getItems: () => req('GET', '/api/store/items'),
@@ -93,6 +97,7 @@ export const store = {
 }
 
 // ─── REFERRALS ──────────────────────────────────────────────
+
 export const referrals = {
   // Get user's referral code, count, earnings
   getInfo: () => req('GET', '/api/referrals/info'),
