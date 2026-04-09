@@ -44,7 +44,7 @@ async function req(method, path, body) {
 // ─── AUTH ───────────────────────────────────────────────────
 export const auth = {
   // Validate Telegram initData and get/create user
-  login: () => req('POST', '/api/auth/login'),
+  login: (startParam) => req('POST', '/api/auth/login', startParam ? { startParam } : undefined),
 }
 
 // ─── MINING ─────────────────────────────────────────────────

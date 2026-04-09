@@ -1694,7 +1694,12 @@ export default function App(){
       let loginResult = { isNewUser: false };
 
       try{
-        loginResult = await api.auth.login();
+        // Read start_param from Telegram's parsed initDataUnsafe object.
+        // This is more reliable than parsing it from the raw initData header string,
+        // which can be empty/missing depending on how the mini app was opened.
+        const startParam = window?.Telegram?.WebApp?.initDataUnsafe?.start_param || '';
+        console.log('Initializing with start_param:', startParam);
+        loginResult = await api.auth.login(startParam);
         console.log('Login successful, user:', loginResult.user);
         const user = loginResult.user;
 
