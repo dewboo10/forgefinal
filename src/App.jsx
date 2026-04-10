@@ -1207,70 +1207,6 @@ function NodeIdentityCard({ upgrades={}, purchased={}, effectiveRate=0.1, mining
 }
 
 /* ═══ FEATURE 6: GENESIS BADGE + EARLY MINER STATUS ═══ */
-function GenesisBadgeCard({ totalUsers=0, hasGenesis=false, onInvite }) {
-  const GENESIS_CAP = 10000;
-  const spotsLeft = Math.max(0, GENESIS_CAP - totalUsers);
-  const pct = Math.min(100, (totalUsers / GENESIS_CAP) * 100);
-  const isAlmostFull = pct > 85;
-
-  if (hasGenesis) {
-    return (
-      <div style={{margin:'0 0 14px',borderRadius:14,border:'1px solid rgba(232,184,75,.35)',background:'rgba(232,184,75,.05)',overflow:'hidden',position:'relative'}}>
-        <div style={{position:'absolute',top:0,left:0,right:0,height:1,background:'linear-gradient(90deg,transparent,#e8b84b88,transparent)'}}/>
-        <div style={{padding:'13px 15px',display:'flex',alignItems:'center',gap:12}}>
-          <div style={{width:44,height:44,borderRadius:11,background:'rgba(232,184,75,.15)',border:'1.5px solid rgba(232,184,75,.5)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,boxShadow:'0 0 16px rgba(232,184,75,.25)',flexShrink:0}}>⭐</div>
-          <div style={{flex:1}}>
-            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:3}}>
-              <span style={{fontFamily:'var(--f)',fontSize:11,fontWeight:700,color:'var(--green)',letterSpacing:'.06em'}}>GENESIS MINER</span>
-              <span style={{fontFamily:'var(--f)',fontSize:8,background:'rgba(232,184,75,.2)',color:'var(--green)',border:'1px solid rgba(232,184,75,.4)',borderRadius:4,padding:'1px 6px'}}>LOCKED IN</span>
-            </div>
-            <div style={{fontFamily:'var(--f)',fontSize:9,color:'var(--tx3)',lineHeight:1.5}}>
-              You joined before 10K users. <span style={{color:'var(--green)'}}>+1.1× permanent rate bonus</span> and exclusive Genesis NFT at listing.
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div style={{margin:'0 0 14px',borderRadius:14,border:`1px solid ${isAlmostFull?'rgba(224,85,85,.4)':'rgba(232,184,75,.25)'}`,background:isAlmostFull?'rgba(224,85,85,.04)':'rgba(232,184,75,.03)',overflow:'hidden',position:'relative'}}>
-      <div style={{position:'absolute',top:0,left:0,right:0,height:1,background:`linear-gradient(90deg,transparent,${isAlmostFull?'rgba(224,85,85,.6)':'rgba(232,184,75,.5)'},transparent)`}}/>
-      <div style={{padding:'13px 15px 10px'}}>
-        <div style={{display:'flex',alignItems:'flex-start',gap:11,marginBottom:10}}>
-          <div style={{width:44,height:44,borderRadius:11,background:isAlmostFull?'rgba(224,85,85,.12)':'rgba(232,184,75,.1)',border:`1.5px solid ${isAlmostFull?'rgba(224,85,85,.4)':'rgba(232,184,75,.3)'}`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,flexShrink:0}}>
-            {isAlmostFull?'🔥':'⭐'}
-          </div>
-          <div style={{flex:1}}>
-            <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:3}}>
-              <span style={{fontFamily:'var(--f)',fontSize:11,fontWeight:700,color:isAlmostFull?'#e05555':'var(--green)',letterSpacing:'.06em'}}>GENESIS BADGE</span>
-              {isAlmostFull&&<span style={{fontFamily:'var(--f)',fontSize:8,background:'rgba(224,85,85,.2)',color:'#e05555',border:'1px solid rgba(224,85,85,.4)',borderRadius:4,padding:'1px 6px',animation:'cf 1s infinite'}}>CLOSING SOON</span>}
-            </div>
-            <div style={{fontFamily:'var(--f)',fontSize:9,color:'var(--tx3)',lineHeight:1.5}}>
-              First <span style={{color:'var(--green)',fontWeight:700}}>10,000 miners</span> get a permanent <span style={{color:'var(--green)',fontWeight:700}}>+1.1× rate bonus</span> and exclusive Genesis NFT. After 10K users — gone forever.
-            </div>
-          </div>
-        </div>
-        {/* Progress bar */}
-        <div style={{marginBottom:8}}>
-          <div style={{display:'flex',justifyContent:'space-between',marginBottom:4}}>
-            <span style={{fontFamily:'var(--f)',fontSize:8,color:'var(--tx3)'}}>{totalUsers.toLocaleString()} / 10,000 miners</span>
-            <span style={{fontFamily:'var(--f)',fontSize:8,color:isAlmostFull?'#e05555':'var(--green)',fontWeight:700}}>{spotsLeft.toLocaleString()} spots left</span>
-          </div>
-          <div style={{height:6,borderRadius:3,background:'var(--card)',overflow:'hidden',position:'relative'}}>
-            <div style={{height:'100%',width:`${pct}%`,borderRadius:3,background:isAlmostFull?'linear-gradient(90deg,#e05555,#ff9090)':'linear-gradient(90deg,var(--green),#ffe08a)',transition:'width .8s ease'}}>
-              <div style={{position:'absolute',right:0,top:0,bottom:0,width:2,background:isAlmostFull?'#e05555':'var(--green)',boxShadow:isAlmostFull?'0 0 8px #e05555':'0 0 8px var(--green)'}}/>
-            </div>
-          </div>
-        </div>
-        <button onClick={onInvite} style={{width:'100%',padding:'9px',borderRadius:9,background:isAlmostFull?'rgba(224,85,85,.15)':'rgba(232,184,75,.1)',border:`1px solid ${isAlmostFull?'rgba(224,85,85,.35)':'rgba(232,184,75,.3)'}`,color:isAlmostFull?'#e05555':'var(--green)',fontFamily:'var(--f)',fontSize:9,fontWeight:700,cursor:'pointer',letterSpacing:'.08em'}}>
-          👥 INVITE FRIENDS BEFORE IT CLOSES →
-        </button>
-      </div>
-    </div>
-  );
-}
-
 /* ═══ FEATURE 8: WALLET CONNECTION REWARD ═══ */
 function WalletRewardCard({ connected=false, claimed=false, onConnect }) {
   if (connected && claimed) return null; // Already done — hide completely
@@ -1290,39 +1226,6 @@ function WalletRewardCard({ connected=false, claimed=false, onConnect }) {
         </div>
         <button onClick={onConnect} style={{flexShrink:0,padding:'8px 14px',borderRadius:8,background:'rgba(91,168,232,.15)',border:'1px solid rgba(91,168,232,.4)',color:'#5096ff',fontFamily:'var(--f)',fontSize:9,fontWeight:700,cursor:'pointer',letterSpacing:'.06em',whiteSpace:'nowrap'}}>
           CONNECT →
-        </button>
-      </div>
-    </div>
-  );
-}
-
-/* ═══ GENESIS HERO ═══ */
-function GenesisHero({ totalUsers=0, onInvite }) {
-  const CAP = 10000;
-  const pct = Math.min(100, (totalUsers / CAP) * 100);
-  const spotsLeft = Math.max(0, CAP - totalUsers);
-  const urgent = pct > 80;
-  return (
-    <div style={{marginBottom:12,borderRadius:14,overflow:'hidden',background:'var(--card)',border:'1px solid var(--br)'}}>
-      <div style={{padding:'18px 18px 16px'}}>
-        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14}}>
-          <div>
-            <div style={{fontSize:12,fontWeight:700,color:'var(--tx)',marginBottom:2}}>Genesis Badge</div>
-            <div style={{fontSize:11,color:'var(--tx3)',fontWeight:500}}>First 10,000 miners only</div>
-          </div>
-          <div style={{textAlign:'right'}}>
-            <div style={{fontSize:18,fontWeight:800,color:urgent?'var(--red)':'var(--green)',lineHeight:1}}>{spotsLeft.toLocaleString()}</div>
-            <div style={{fontSize:9,color:'var(--tx3)',fontWeight:600,letterSpacing:'.06em',textTransform:'uppercase',marginTop:2}}>spots left</div>
-          </div>
-        </div>
-        <div style={{height:3,borderRadius:2,background:'var(--card3)',marginBottom:14,overflow:'hidden'}}>
-          <div style={{height:'100%',width:`${pct}%`,borderRadius:2,background:urgent?'var(--red)':'var(--green)',transition:'width .8s'}}/>
-        </div>
-        <div style={{fontSize:12,color:'var(--tx3)',lineHeight:1.6,marginBottom:16}}>
-          Permanent <span style={{color:'var(--tx)',fontWeight:700}}>+1.1× mining rate</span> and Genesis NFT at listing. After 10K users — gone forever.
-        </div>
-        <button onClick={onInvite} style={{width:'100%',padding:14,borderRadius:14,background:'var(--green)',border:'none',color:'#000',fontSize:14,fontWeight:800,cursor:'pointer',letterSpacing:'.01em'}}>
-          Invite Friends → Lock In Your Spot
         </button>
       </div>
     </div>
@@ -1627,8 +1530,7 @@ export default function App(){
   const [totalUsers,setTotalUsers]=useState(null);
   // Feature states
   const [walletBonusClaimed,setWalletBonusClaimed]=useState(()=>!!localStorage.getItem('forge_wallet_bonus'));
-  const [genesisBadge,setGenesisBadge]=useState(()=>!!localStorage.getItem('forge_genesis_badge'));
-  const [coolingWarning,setCoolingWarning]=useState(false);
+const [coolingWarning,setCoolingWarning]=useState(false);
   const [lastActiveAt,setLastActiveAt]=useState(()=>Number(localStorage.getItem('forge_last_active'))||Date.now());
   const [storeTab,setStoreTab]=useState('all');
   const [teamTab,setTeamTab]=useState('refer');
@@ -1709,8 +1611,7 @@ export default function App(){
         // If new user (DB was wiped), clear all local state
         if (loginResult.isNewUser) {
           localStorage.removeItem('forge_wallet_bonus');
-          localStorage.removeItem('forge_genesis_badge');
-          localStorage.removeItem('forge_last_active');
+localStorage.removeItem('forge_last_active');
           localStorage.removeItem('forge_legacy_seen');
           // Clear TonConnect's own localStorage keys manually
           Object.keys(localStorage)
@@ -1874,15 +1775,7 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
     return()=>clearInterval(t);
   },[mining,lastActiveAt]);
 
-  // Genesis badge — award when user is among early miners (totalUsers < 10000)
-  useEffect(()=>{
-    if(!genesisBadge&&totalUsers!==null&&totalUsers<10000&&totalMined>0){
-      setGenesisBadge(true);
-      localStorage.setItem('forge_genesis_badge','1');
-    }
-  },[genesisBadge,totalUsers,totalMined]);
-
-  // Wallet bonus — grant when wallet first connected
+// Wallet bonus — grant when wallet first connected
   const walletBonusGranted=useRef(false);
   useEffect(()=>{
     if(userFriendlyAddress&&!walletBonusClaimed&&!walletBonusGranted.current){
@@ -2950,25 +2843,7 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                   </div>
                   <div style={{height:1,background:'rgba(255,255,255,.05)'}}/>
 
-                  {/* 4. GENESIS BADGE */}
-                  {genesisBadge&&<>
-                    <div style={{padding:'12px 20px',display:'flex',alignItems:'center',gap:10,position:'relative',overflow:'hidden'}}>
-                      <svg style={{position:'absolute',right:18,opacity:.05}} width="44" height="44" viewBox="0 0 44 44">
-                        <polygon points="22,2 26,15 40,15 30,24 34,38 22,30 10,38 14,24 4,15 18,15" fill="none" stroke="#fff" strokeWidth="1.4"/>
-                        <polygon points="22,8 25,17 35,17 28,23 31,33 22,27 13,33 16,23 9,17 19,17" fill="#fff" opacity=".25"/>
-                      </svg>
-                      <div style={{width:30,height:30,borderRadius:7,background:'rgba(255,193,0,.1)',border:'1px solid rgba(255,193,0,.2)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><polygon points="8,1 10,6 15,6 11,9 12,14 8,11 4,14 5,9 1,6 6,6" fill="#ffc100" opacity=".9"/></svg>
-                      </div>
-                      <div style={{flex:1}}>
-                        <div style={{fontSize:12,fontWeight:700,color:'#00c37b'}}>Genesis Miner</div>
-                        <div style={{fontSize:10,color:'rgba(255,255,255,.2)',marginTop:1}}>+1.1× rate locked forever</div>
-                      </div>
-                    </div>
-                    <div style={{height:1,background:'rgba(255,255,255,.05)'}}/>
-                  </>}
-
-                  {/* 6. HASH TERMINAL */}
+{/* 6. HASH TERMINAL */}
                   <div style={{padding:'13px 20px',position:'relative',overflow:'hidden'}}>
                     <svg style={{position:'absolute',top:10,right:14,opacity:.04,pointerEvents:'none'}} width="72" height="72" viewBox="0 0 72 72">
                       <rect x="6" y="6" width="60" height="60" fill="none" stroke="#fff" strokeWidth=".9"/>
