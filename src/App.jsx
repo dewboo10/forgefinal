@@ -1518,6 +1518,7 @@ export default function App(){
   const [refCode,setRefCode]=useState('');
   const [refList,setRefList]=useState([]);
   const [claimedTiers,setClaimedTiers]=useState(new Set());
+  const [tiersLoaded,setTiersLoaded]=useState(false);
   const [rewardPopup,setRewardPopup]=useState(null);
   const [copied,setCopied]=useState(false);
   const [hash,setHash]=useState({a:genHash(),b:genHash().slice(0,16),c:genHash().slice(0,16)});
@@ -2095,8 +2096,9 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
         const list = Array.isArray(res) ? res : (res.tiers || []);
         const claimed=new Set(list.filter(t=>t.claimed).map(t=>t.refs));
         setClaimedTiers(claimed);
+        setTiersLoaded(true);
         if(res.ref_count!=null) setSimRefs(res.ref_count);
-      }).catch(()=>{});
+      }).catch(()=>{ setTiersLoaded(true); });
       api.referrals.getInfo().then(info=>{
         setSimRefs(info.referralCount||info.ref_count||0);
         if(info.referralCode||info.ref_code) setRefCode(info.referralCode||info.ref_code);
@@ -3325,14 +3327,23 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                             <div style={{flexShrink:0}}>
                               {claimed
                                 ?<span style={{fontSize:11,fontWeight:700,color:'#00c37b'}}>✓ Claimed</span>
-                                :reached
+                                :!tiersLoaded
+                                  ?<span style={{fontSize:10,color:'rgba(255,255,255,.25)'}}>...</span>
+                                  :reached
                                   ?<button onClick={async()=>{
                                       try{
                                         const res=await api.referrals.claimTier(tier.refs);
                                         setClaimedTiers(s=>new Set([...s,tier.refs]));
                                         if(typeof res?.frg==='number'){setCommitted(c => ({ ...c, balance: c.balance + res.frg, totalMined: c.totalMined + res.frg }));}
                                         showToast(tier.icon,'Reward Claimed!',tier.reward);
-                                      }catch(e){showToast('❌','Claim failed','Try again');}
+                                      }catch(e){
+                                        if(e?.message==='Already claimed'){
+                                          setClaimedTiers(s=>new Set([...s,tier.refs]));
+                                          showToast('✓','Already Claimed','Reward was already applied');
+                                        } else {
+                                          showToast('❌','Claim failed','Try again');
+                                        }
+                                      }
                                     }} style={{padding:'6px 12px',borderRadius:6,background:'#00c37b',border:'none',color:'#000',fontSize:10,fontWeight:700,cursor:'pointer'}}>
                                       Claim
                                     </button>
@@ -3683,26 +3694,27 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                 {/* Earnings breakdown */}
                 <div style={{padding:'14px 20px',borderBottom:'1px solid rgba(255,255,255,.05)'}}>
                   <div style={{fontSize:9,fontWeight:600,color:'rgba(255,255,255,.18)',letterSpacing:'.12em',textTransform:'uppercase',marginBottom:10}}>Earnings Breakdown</div>
-                  {[
-                    // {dot:'#00c37b',l:'Active mining',v:`${fmt(totalMined)} FRG`},
-                    {dot:'#00c37b',l:'Active mining',v:`${fmt(liveTotalMined)} FRG`},
-                    {dot:'#00c37b',l:`Auto-mine${!hasAutoMine?' (locked)':''}`,v:hasAutoMine?`${fmt(Math.floor(totalMined*.3))} FRG`:'—',dim:!hasAutoMine},
-                    {dot:'#5096ff',l:'Referral income',v:referralEarnings>0?`${fmt(referralEarnings)} FRG`:`${fmt(simRefs*1240)} FRG`,c:'#5096ff'},
-                    {dot:'#b464ff',l:'Mission rewards',v:`${fmt(missionPoints)} FRG`,c:'#b464ff'},
-                  ].map((r,i)=>(
-                    <div key={i} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'7px 0',borderBottom:'1px solid rgba(255,255,255,.04)',opacity:r.dim?.45:1}}>
-                      <div style={{display:'flex',alignItems:'center',gap:8}}>
-                        <div style={{width:6,height:6,borderRadius:'50%',background:r.dot,flexShrink:0}}/>
-                        <span style={{fontSize:11,color:'rgba(255,255,255,.35)'}}>{r.l}</span>
+                  {(()=>{
+                    const spent=Math.max(0,Math.round(liveTotalMined-liveBalance));
+                    const rows=[
+                      {dot:'#00c37b',l:'Active mining',v:`${fmt(liveTotalMined)} FRG`},
+                      {dot:'#5096ff',l:'Referral income',v:`${fmt(referralEarnings>0?referralEarnings:simRefs*1240)} FRG`,c:'#5096ff'},
+                      {dot:'#b464ff',l:'Mission rewards',v:`${fmt(missionPoints)} FRG`,c:'#b464ff'},
+                      ...(spent>0?[{dot:'#e05555',l:'Upgrades & boosts',v:`-${fmt(spent)} FRG`,c:'#e05555'}]:[]),
+                    ];
+                    return rows.map((r,i)=>(
+                      <div key={i} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'7px 0',borderBottom:'1px solid rgba(255,255,255,.04)'}}>
+                        <div style={{display:'flex',alignItems:'center',gap:8}}>
+                          <div style={{width:6,height:6,borderRadius:'50%',background:r.dot,flexShrink:0}}/>
+                          <span style={{fontSize:11,color:'rgba(255,255,255,.35)'}}>{r.l}</span>
+                        </div>
+                        <span style={{fontSize:11,fontWeight:600,color:r.c||'rgba(255,255,255,.5)'}}>{r.v}</span>
                       </div>
-                      <span style={{fontSize:11,fontWeight:600,color:r.c||'rgba(255,255,255,.5)'}}>{r.v}</span>
-                    </div>
-                  ))}
+                    ));
+                  })()}
                   <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 0 0'}}>
-                    <span style={{fontSize:12,fontWeight:700,color:'rgba(255,255,255,.5)'}}>Total</span>
-                  <span style={{fontSize:16,fontWeight:800,color:'#fff'}}>
-  {fmt(liveBalance)} FRG
-</span>
+                    <span style={{fontSize:12,fontWeight:700,color:'rgba(255,255,255,.5)'}}>Balance</span>
+                    <span style={{fontSize:16,fontWeight:800,color:'#fff'}}>{fmt(liveBalance)} FRG</span>
                   </div>
                 </div>
 {/* Mission Claims History */}
