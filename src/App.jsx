@@ -1526,7 +1526,7 @@ export default function App(){
   const [rateH,setRateH]=useState([]);
   const [balH,setBalH]=useState([]);
   const [log,setLog]=useState([{t:'00:00',type:'info',msg:'Forge node initialized. Ready.'}]);
-  const [circleMembers,setCircleMembers]=useState(MOCK_CIRCLE);
+  const [circleMembers,setCircleMembers]=useState([]);
   const [lbData,setLbData]=useState(null);
   const [totalUsers,setTotalUsers]=useState(null);
   // Feature states
@@ -1620,7 +1620,6 @@ localStorage.removeItem('forge_last_active');
             .forEach(k => localStorage.removeItem(k));
           try { await tonConnectUI.disconnect(); } catch(e) {}
           setWalletBonusClaimed(false);
-          setGenesisBadge(false);
         }
 
         // Fetch mining state for accurate balance, totalMined, blocks
@@ -1704,6 +1703,16 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
             return acc + m.checkpoints.reduce((s, cp, i) => s + (claimed.has(i) ? cp.r : 0), 0);
           }, 0);
           if (loadedMP > 0) setMP(loadedMP);
+        }catch(e){}
+
+        // Load security circle members for mine tab display
+        try{
+          const circleData = await api.circle.getCircle();
+          const CIRCLE_COLORS=['#5ec98a','#5ba8e8','#c07cf0','#e06c4c','#FFB800'];
+          setCircleMembers((circleData.members||[]).map(m=>{
+            const name=m.first_name||m.username||'Unknown';
+            return {id:m.member_id,name,trusted:m.trusted,avatar:name[0].toUpperCase(),color:CIRCLE_COLORS[Number(m.member_id)%5]||'#5ec98a'};
+          }));
         }catch(e){}
 
         // If mining was already active when user opens app, set session start
@@ -2826,12 +2835,12 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                         <div style={{fontSize:10,color:'rgba(255,255,255,.22)'}}>Verify contacts · boost your FRG allocation</div>
                       </div>
                       <div style={{textAlign:'center',background:'rgba(255,255,255,.04)',borderRadius:6,padding:'4px 9px',flexShrink:0}}>
-                        <div style={{fontSize:16,fontWeight:800,color:'#fff',lineHeight:1}}>{Math.round((MOCK_CIRCLE.filter(m=>m.trusted).length/5)*100)}</div>
+                        <div style={{fontSize:16,fontWeight:800,color:'#fff',lineHeight:1}}>{Math.round((circleMembers.filter(m=>m.trusted).length/5)*100)}</div>
                         <div style={{fontSize:8,color:'rgba(255,255,255,.2)',fontWeight:600,textTransform:'uppercase',letterSpacing:'.05em'}}>Trust</div>
                       </div>
                     </div>
                     <div style={{display:'flex',gap:5,background:'rgba(255,255,255,.025)',borderRadius:7,padding:'7px 9px',alignItems:'center'}}>
-                      {Array.from({length:5},(_,i)=>{const m=MOCK_CIRCLE[i];return m?(
+                      {Array.from({length:5},(_,i)=>{const m=circleMembers[i];return m?(
                         <div key={i} style={{width:26,height:26,borderRadius:6,background:`${m.color}10`,border:`1px solid ${m.trusted?m.color+'30':'rgba(255,255,255,.06)'}`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,fontSize:10,color:m.trusted?m.color:'rgba(255,255,255,.2)',position:'relative'}}>
                           {m.avatar}
                           {m.trusted&&<div style={{position:'absolute',top:1,right:1,width:5,height:5,borderRadius:'50%',background:'#00c37b',border:'1px solid #000'}}/>}
@@ -2839,7 +2848,7 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                       ):(
                         <div key={i} style={{width:26,height:26,borderRadius:6,border:'1px dashed rgba(255,255,255,.06)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,fontSize:11,color:'rgba(255,255,255,.15)'}}>+</div>
                       );})}
-                      <div style={{flex:1,fontSize:9,color:'rgba(255,255,255,.18)',paddingLeft:5}}>{MOCK_CIRCLE.filter(m=>m.trusted).length}/5 verified</div>
+                      <div style={{flex:1,fontSize:9,color:'rgba(255,255,255,.18)',paddingLeft:5}}>{circleMembers.filter(m=>m.trusted).length}/5 verified</div>
                       <span style={{fontSize:12,color:'rgba(255,255,255,.16)'}}>›</span>
                     </div>
                   </div>
@@ -3695,11 +3704,13 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                 <div style={{padding:'14px 20px',borderBottom:'1px solid rgba(255,255,255,.05)'}}>
                   <div style={{fontSize:9,fontWeight:600,color:'rgba(255,255,255,.18)',letterSpacing:'.12em',textTransform:'uppercase',marginBottom:10}}>Earnings Breakdown</div>
                   {(()=>{
-                    const spent=Math.max(0,Math.round(liveTotalMined-liveBalance));
+                    // total_mined already includes mission rewards (backend adds to both).
+                    // referral commissions add ONLY to balance (not total_mined).
+                    // Spent = everything earned minus current balance.
+                    const spent=Math.max(0,Math.round(liveTotalMined+referralEarnings-liveBalance));
                     const rows=[
-                      {dot:'#00c37b',l:'Active mining',v:`${fmt(liveTotalMined)} FRG`},
+                      {dot:'#00c37b',l:'Mining & rewards',v:`${fmt(liveTotalMined)} FRG`},
                       {dot:'#5096ff',l:'Referral income',v:`${fmt(referralEarnings>0?referralEarnings:simRefs*1240)} FRG`,c:'#5096ff'},
-                      {dot:'#b464ff',l:'Mission rewards',v:`${fmt(missionPoints)} FRG`,c:'#b464ff'},
                       ...(spent>0?[{dot:'#e05555',l:'Upgrades & boosts',v:`-${fmt(spent)} FRG`,c:'#e05555'}]:[]),
                     ];
                     return rows.map((r,i)=>(
