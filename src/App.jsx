@@ -283,10 +283,10 @@ const UPGRADES = [
 ];
 
 const MISSIONS = [
-  { id:"m1", icon:"⛏", name:"The Miner",    color:"#e8b84b", key:"total",     unit:"FRG", checkpoints:[{at:1000,r:500,l:"1K"},{at:5000,r:1500,l:"5K"},{at:20000,r:5000,l:"20K"},{at:100000,r:20000,l:"100K"},{at:500000,r:80000,l:"500K"}] },
-  { id:"m2", icon:"⬡", name:"Block Hunter", color:"#c07cf0", key:"blocks",    unit:"blk", checkpoints:[{at:1,r:500,l:"1"},{at:5,r:2500,l:"5"},{at:20,r:8000,l:"20"},{at:50,r:20000,l:"50"}] },
-  { id:"m3", icon:"👥", name:"Recruiter",    color:"#e06c4c", key:"refs",      unit:"ref", checkpoints:[{at:1,r:5000,l:"1"},{at:5,r:30000,l:"5"},{at:10,r:100000,l:"10"},{at:25,r:500000,l:"25"}] },
-  { id:"m4", icon:"⚡", name:"Speed Demon",  color:"#5ba8e8", key:"rate",      unit:"/s",  checkpoints:[{at:1,r:500,l:"1/s"},{at:5,r:3000,l:"5/s"},{at:20,r:12000,l:"20/s"},{at:50,r:30000,l:"50/s"}] },
+  { id:"m1", icon:"⛏", name:"The Miner",    color:"#e8b84b", key:"total",  unit:"FRG", checkpoints:[{at:1000,r:500,l:"1K"},{at:5000,r:1500,l:"5K"},{at:20000,r:5000,l:"20K"},{at:100000,r:20000,l:"100K"},{at:500000,r:80000,l:"500K"},{at:10000000,r:200000,l:"10M"},{at:100000000,r:1000000,l:"100M"},{at:1000000000,r:5000000,l:"1B"},{at:10000000000,r:20000000,l:"10B"},{at:100000000000,r:100000000,l:"100B"}] },
+  { id:"m2", icon:"⬡", name:"Block Hunter", color:"#c07cf0", key:"blocks", unit:"blk", checkpoints:[{at:1,r:500,l:"1"},{at:5,r:2500,l:"5"},{at:20,r:8000,l:"20"},{at:50,r:20000,l:"50"},{at:100,r:50000,l:"100"},{at:500,r:200000,l:"500"}] },
+  { id:"m3", icon:"👥", name:"Recruiter",    color:"#e06c4c", key:"refs",   unit:"ref", checkpoints:[{at:1,r:5000,l:"1"},{at:5,r:30000,l:"5"},{at:10,r:100000,l:"10"},{at:25,r:500000,l:"25"},{at:50,r:1000000,l:"50"},{at:100,r:3000000,l:"100"}] },
+  { id:"m4", icon:"⚡", name:"Speed Demon",  color:"#5ba8e8", key:"rate",   unit:"/s",  checkpoints:[{at:1,r:500,l:"1/s"},{at:5,r:3000,l:"5/s"},{at:20,r:12000,l:"20/s"},{at:50,r:30000,l:"50/s"}] },
 ];
 
 const CRYPTO_STORIES = [
@@ -2206,25 +2206,26 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
     try{
       const res=await api.referrals.claimTier(tier.refs);
       console.log('Referral reward claimed:', res);
-      // Backend returns { ok, frg, reward } — apply FRG bonus to balance
+      // Apply FRG bonus to balance
       if(typeof res.frg==='number'){ setCommitted(c => ({ ...c, balance: c.balance + res.frg, totalMined: c.totalMined + res.frg })); }
+      // Refresh mining state from server so automine/speed/perm flags are live
+      try{
+        const state = await api.mining.getState();
+        const hasAutoNow = state.has_automine || state.automine_lifetime;
+        if(hasAutoNow) setPurch(p=>({...p,[`reward_auto_${tier.refs}`]:true}));
+        if(state.speed_perm) setPurch(p=>({...p,speed_perm:true}));
+        if(state.boost && new Date(state.boost.until)>new Date()){
+          const mult=state.boost.type==='5x_turbo'?5:3;
+          const rem=Math.max(0,Math.floor((new Date(state.boost.until)-Date.now())/1000));
+          if(rem>0) setAB({mult,rem,label:mult===5?'5× TURBO':'3× SURGE'});
+        }
+        setCommitted(c=>({
+          ...c,
+          balance:     typeof state.balance==='number'?state.balance:c.balance,
+          totalMined:  typeof state.totalMined==='number'?state.totalMined:(typeof state.total_mined==='number'?state.total_mined:c.totalMined),
+        }));
+      }catch(e){ console.error('State refresh error:',e); }
     }catch(e){ console.error('Claim tier error:',e); }
-    // Activate the actual reward
-    if(tier.rewardType==='automine'||tier.rewardType==='lifetime'){
-      // Grant free auto-mine — mark in purchased so hasAutoMine becomes true
-      setPurch(p=>({...p,[`reward_auto_${tier.refs}`]:true}));
-    }
-    if(tier.rewardType==='speed'){
-      // Activate boost immediately — 3× for 24h (86400s but demo uses 120s)
-      const mult=tier.reward.startsWith('5×')?5:3;
-      const dur=tier.reward.includes('7 Days')?120:60;
-      setAB({mult,rem:dur,label:tier.reward});
-      setBoostCh(c=>c+3); // extra charges too
-    }
-    if(tier.rewardType==='permanent'){
-      // Give permanent 2x — sets purchased.speed_perm which is read by permMult
-      setPurch(p=>({...p,speed_perm:true}));
-    }
     // Particle only — balance already updated from res.frg above (don't add twice)
     const octMatch = tier.subReward.replace(/,/g,'').match(/\+?(\d+)\s*FRG/);
     if(octMatch){
@@ -3544,8 +3545,12 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                 {MISSIONS.map(m=>{
                   const progress=getMProg(m.key);
                   const claimedSet=new Set(claimedCPs[m.id]||[]);
-                  const maxCp=m.checkpoints[m.checkpoints.length-1];
-                  const pct=Math.min(100,(progress/maxCp.at)*100);
+                  // Use the next unclaimed checkpoint as the target for the progress bar
+                  const nextUnclaimed=m.checkpoints.find((cp,i)=>!claimedSet.has(i));
+                  const prevCp=nextUnclaimed?m.checkpoints[m.checkpoints.indexOf(nextUnclaimed)-1]:m.checkpoints[m.checkpoints.length-2];
+                  const barFrom=prevCp?prevCp.at:0;
+                  const barTo=nextUnclaimed?nextUnclaimed.at:m.checkpoints[m.checkpoints.length-1].at;
+                  const pct=nextUnclaimed?Math.min(100,((progress-barFrom)/(barTo-barFrom))*100):100;
                   const hasClaimable=m.checkpoints.some((cp,i)=>progress>=cp.at&&!claimedSet.has(i));
                   return(
                     <div key={m.id} style={{margin:'0 20px 10px',borderRadius:10,background:hasClaimable?'rgba(0,195,123,.04)':'rgba(255,255,255,.02)',border:`1px solid ${hasClaimable?'rgba(0,195,123,.12)':'rgba(255,255,255,.06)'}`,overflow:'hidden'}}>
@@ -3731,12 +3736,8 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
 {/* Mission Claims History */}
                 <div style={{padding:'14px 20px',borderBottom:'1px solid rgba(255,255,255,.05)'}}>
                   <div style={{fontSize:9,fontWeight:600,color:'rgba(255,255,255,.18)',letterSpacing:'.12em',textTransform:'uppercase',marginBottom:10}}>Mission Progress</div>
-                  {[
-                    {id:'m1',icon:'⛏',name:'The Miner',    color:'#e8b84b', checkpoints:[{at:1000,r:500,l:'1K'},{at:5000,r:1500,l:'5K'},{at:20000,r:5000,l:'20K'},{at:100000,r:20000,l:'100K'},{at:500000,r:80000,l:'500K'}], progress:totalMined},
-                    {id:'m2',icon:'⬡',name:'Block Hunter', color:'#c07cf0', checkpoints:[{at:1,r:500,l:'1'},{at:5,r:2500,l:'5'},{at:20,r:8000,l:'20'},{at:50,r:20000,l:'50'}],                         progress:blocks},
-                    {id:'m3',icon:'👥',name:'Recruiter',    color:'#e06c4c', checkpoints:[{at:1,r:5000,l:'1'},{at:5,r:30000,l:'5'},{at:10,r:100000,l:'10'},{at:25,r:500000,l:'25'}],                    progress:simRefs},
-                    {id:'m4',icon:'⚡',name:'Speed Demon',  color:'#5ba8e8', checkpoints:[{at:1,r:500,l:'1/s'},{at:5,r:3000,l:'5/s'},{at:20,r:12000,l:'20/s'},{at:50,r:30000,l:'50/s'}],               progress:effectiveRate},
-                  ].map(m=>{
+                  {MISSIONS.map(mis=>{
+                    const m={...mis,progress:({total:totalMined,blocks,refs:simRefs,rate:effectiveRate}[mis.key]||0)};
                     const claimedSet = new Set(claimedCPs[m.id]||[]);
                     const totalReward = m.checkpoints.filter((_,i)=>claimedSet.has(i)).reduce((a,cp)=>a+cp.r,0);
                     return(
