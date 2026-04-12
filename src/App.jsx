@@ -1888,6 +1888,8 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
   const upgradeRate=UPGRADES.reduce((acc,u)=>{const lv=upgrades[u.id]||upgrades[String(u.id)]||0;return acc+u.rateBonus*lv;},0);
   const permMult=purchased['speed_perm']?2:1;
   const effectiveRate=(baseRate+upgradeRate)*(activeBoost?.mult||1)*permMult*halvingMult;
+  // Rate without boost — matches what the backend calcRate() returns (used for mission validation)
+  const baseEffectiveRate=(baseRate+upgradeRate)*permMult*halvingMult;
   const elapsedSecs = sessionStart ? Math.max(0,(nowMs-sessionStart)/1000) : 0;
   // Split earnings into pre-boost (base rate) and post-boost (boosted rate) segments.
   // Without this split, activating a boost retroactively applies the multiplier to all
@@ -2241,7 +2243,7 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
  // button only appears when the server will actually accept the claim. liveTotalMined
  // includes unconfirmed pending earnings — if we used that, the button could appear
  // before the server has credited the amount, causing silent 400 "not reached" rejects.
- const getMProg=(key)=>{ if(key==='total')return totalMined; if(key==='blocks')return blocks; if(key==='time_mins')return Math.floor(sessT/60); if(key==='rate')return effectiveRate; if(key==='refs')return simRefs; return 0; };
+ const getMProg=(key)=>{ if(key==='total')return totalMined; if(key==='blocks')return blocks; if(key==='time_mins')return Math.floor(sessT/60); if(key==='rate')return baseEffectiveRate; if(key==='refs')return simRefs; return 0; };
   const totalClaimable=MISSIONS.reduce((acc,m)=>{const prog=getMProg(m.key);const claimed=new Set(claimedCPs[m.id]||[]);return acc+m.checkpoints.filter((cp,i)=>prog>=cp.at&&!claimed.has(i)).length;},0);
 
   const claimCP=async(mId,cpIdx,reward)=>{
@@ -3737,7 +3739,7 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                 <div style={{padding:'14px 20px',borderBottom:'1px solid rgba(255,255,255,.05)'}}>
                   <div style={{fontSize:9,fontWeight:600,color:'rgba(255,255,255,.18)',letterSpacing:'.12em',textTransform:'uppercase',marginBottom:10}}>Mission Progress</div>
                   {MISSIONS.map(mis=>{
-                    const m={...mis,progress:({total:totalMined,blocks,refs:simRefs,rate:effectiveRate}[mis.key]||0)};
+                    const m={...mis,progress:({total:totalMined,blocks,refs:simRefs,rate:baseEffectiveRate}[mis.key]||0)};
                     const claimedSet = new Set(claimedCPs[m.id]||[]);
                     const totalReward = m.checkpoints.filter((_,i)=>claimedSet.has(i)).reduce((a,cp)=>a+cp.r,0);
                     return(
