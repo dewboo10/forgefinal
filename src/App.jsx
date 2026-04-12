@@ -283,9 +283,9 @@ const UPGRADES = [
 ];
 
 const MISSIONS = [
-  { id:"m1", icon:"⛏", name:"The Miner",    color:"#e8b84b", key:"total",  unit:"FRG", checkpoints:[{at:1000,r:500,l:"1K"},{at:5000,r:1500,l:"5K"},{at:20000,r:5000,l:"20K"},{at:100000,r:20000,l:"100K"},{at:500000,r:80000,l:"500K"},{at:10000000,r:200000,l:"10M"},{at:100000000,r:1000000,l:"100M"},{at:1000000000,r:5000000,l:"1B"},{at:10000000000,r:20000000,l:"10B"},{at:100000000000,r:100000000,l:"100B"}] },
-  { id:"m2", icon:"⬡", name:"Block Hunter", color:"#c07cf0", key:"blocks", unit:"blk", checkpoints:[{at:1,r:500,l:"1"},{at:5,r:2500,l:"5"},{at:20,r:8000,l:"20"},{at:50,r:20000,l:"50"},{at:100,r:50000,l:"100"},{at:500,r:200000,l:"500"}] },
-  { id:"m3", icon:"👥", name:"Recruiter",    color:"#e06c4c", key:"refs",   unit:"ref", checkpoints:[{at:1,r:5000,l:"1"},{at:5,r:30000,l:"5"},{at:10,r:100000,l:"10"},{at:25,r:500000,l:"25"},{at:50,r:1000000,l:"50"},{at:100,r:3000000,l:"100"}] },
+  { id:"m1", icon:"⛏", name:"The Miner",    color:"#e8b84b", key:"total",  unit:"FRG", checkpoints:[{at:1000,r:500,l:"1K"},{at:5000,r:1500,l:"5K"},{at:20000,r:5000,l:"20K"},{at:100000,r:20000,l:"100K"},{at:500000,r:80000,l:"500K"},{at:100000000,r:500000,l:"100M"},{at:1000000000,r:2000000,l:"1B"},{at:10000000000,r:10000000,l:"10B"},{at:100000000000,r:50000000,l:"100B"}] },
+  { id:"m2", icon:"⬡", name:"Block Hunter", color:"#c07cf0", key:"blocks", unit:"blk", checkpoints:[{at:1,r:500,l:"1"},{at:5,r:2500,l:"5"},{at:20,r:8000,l:"20"},{at:50,r:20000,l:"50"}] },
+  { id:"m3", icon:"👥", name:"Recruiter",    color:"#e06c4c", key:"refs",   unit:"ref", checkpoints:[{at:1,r:5000,l:"1"},{at:5,r:30000,l:"5"},{at:10,r:100000,l:"10"},{at:25,r:500000,l:"25"}] },
   { id:"m4", icon:"⚡", name:"Speed Demon",  color:"#5ba8e8", key:"rate",   unit:"/s",  checkpoints:[{at:1,r:500,l:"1/s"},{at:5,r:3000,l:"5/s"},{at:20,r:12000,l:"20/s"},{at:50,r:30000,l:"50/s"}] },
 ];
 
