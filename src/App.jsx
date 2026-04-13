@@ -1503,8 +1503,8 @@ export default function App(){
   const [purchased,setPurch]=useState({});
   const [particles,setPart]=useState([]);
   const [toast,setToast]=useState(null);
-  const [boostCh,setBoostCh]=useState(1); // 3× SURGE free charge
-  const [turboCh,setTurboCh]=useState(1); // 5× SURGE free charge
+  const [boostCh,setBoostCh]=useState(0); // 3× SURGE charges — hydrated from server
+  const [turboCh,setTurboCh]=useState(0); // 5× TURBO charges — hydrated from server
   // Timestamps when free charge was last used (for cooldown)
   const [surgeUsedAt,setSurgeUsedAt]=useState(null);  // 4h cooldown
   const [turboUsedAt,setTurboUsedAt]=useState(null);  // 6h cooldown
@@ -1556,28 +1556,13 @@ const [coolingWarning,setCoolingWarning]=useState(false);
         tg.openInvoice(d.invoiceLink,async(status)=>{
           console.log('Stars payment status:', status);
           if(status==='paid'){
-            // For boosts: immediately activate via the boost endpoint
+            // For boosts: the Telegram webhook adds the charge to DB.
+            // We add it optimistically here so the button lights up immediately.
+            // Do NOT auto-activate — let the user tap the button when ready.
             if(itemId==='boost_surge'||itemId==='boost_turbo'){
-              const boostType=itemId==='boost_surge'?'surge':'turbo';
-              try{
-                const res=await api.boosts.activate(boostType);
-                if(itemId==='boost_surge'){
-                  setAB({mult:3,rem:60,label:'3× SURGE',activatedAt:Date.now()});
-                  setSurgeUsedAt(res.activatedAt);
-                  setBoostCh(0);
-                  showToast('⚡','3× SURGE Active!','60 seconds · paid');
-                } else {
-                  setAB({mult:5,rem:90,label:'5× TURBO',activatedAt:Date.now()});
-                  setTurboUsedAt(res.activatedAt);
-                  setTurboCh(0);
-                  showToast('🔥','5× TURBO Active!','90 seconds · paid');
-                }
-              }catch(e){
-                // Charge was added to DB — let user tap manually
-                if(itemId==='boost_surge') setBoostCh(c=>c+1);
-                else setTurboCh(c=>c+1);
-                showToast('⭐','Charge added!','Tap the boost button to activate');
-              }
+              if(itemId==='boost_surge') setBoostCh(c=>c+1);
+              else setTurboCh(c=>c+1);
+              showToast('⚡','Charge added!','Tap the boost button to activate');
             } else {
               // For other items (automine, chest, etc) refresh state from server
               try{
@@ -2740,8 +2725,8 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                     },
                     {
                       key:'turbo',label:'5× Turbo',icon:'🔥',
-                      active:activeBoost?.label==='5× SURGE',
-                      badge:activeBoost?.label==='5× SURGE'?`${activeBoost.rem}s`:turboCd?turboCd:turboCh>0?'FREE':'30⭐',
+                      active:activeBoost?.label==='5× TURBO',
+                      badge:activeBoost?.label==='5× TURBO'?`${activeBoost.rem}s`:turboCd?turboCd:turboCh>0?'FREE':'30⭐',
                       badgeColor:turboCd?'#ff4d4d':turboCh>0?'#00c37b':'#ffc100',
                       sub:turboCh>0?'Free · 6h reset':turboCd||'⭐ Stars',
                       canUse:mining&&!activeBoost&&turboReady,
