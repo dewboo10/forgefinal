@@ -2060,19 +2060,19 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
     const t=setInterval(()=>{
       const n=Date.now();
       setNow(n);
-      // Restore free charge when cooldown expires
-      if(surgeUsedAt&&n-surgeUsedAt>=4*3600000) setBoostCh(1);
-      if(turboUsedAt&&n-turboUsedAt>=6*3600000) setTurboCh(1);
+      // (surgeReady / turboReady already handle free-charge availability — no setBoostCh needed here)
     },1000);
     return()=>clearInterval(t);
   },[surgeUsedAt,turboUsedAt]);
 
   // Helper: format ms remaining as "Xh Xm Xs"
   const fmtCd=(ms)=>{ const s=Math.ceil(ms/1000),h=~~(s/3600),m=~~((s%3600)/60),ss=s%60; return h?`${h}h ${m}m`:m?`${m}m ${ss}s`:`${ss}s`; };
-  const surgeReady=boostCh>0||(surgeUsedAt&&now-surgeUsedAt>=4*3600000);
-  const turboReady=turboCh>0||(turboUsedAt&&now-turboUsedAt>=6*3600000);
-  const surgeCd=surgeUsedAt&&!surgeReady?fmtCd(4*3600000-(now-surgeUsedAt)):null;
-  const turboCd=turboUsedAt&&!turboReady?fmtCd(6*3600000-(now-turboUsedAt)):null;
+  // surgeReady: true if free charge available (never used OR cooldown expired) OR has paid charges
+  const surgeReady=!surgeUsedAt||boostCh>0||(now-surgeUsedAt>=4*3600000);
+  const turboReady=!turboUsedAt||turboCh>0||(now-turboUsedAt>=6*3600000);
+  // surgeCd: only show countdown when no paid charges AND cooldown is active
+  const surgeCd=(!surgeReady&&surgeUsedAt)?fmtCd(4*3600000-(now-surgeUsedAt)):null;
+  const turboCd=(!turboReady&&turboUsedAt)?fmtCd(6*3600000-(now-turboUsedAt)):null;
 
   const lastRefresh = useRef(0);
 
@@ -2704,9 +2704,9 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                       badge:activeBoost?.label==='3× SURGE'?`${activeBoost.rem}s`:surgeCd?surgeCd:boostCh>0?'FREE':'1⭐',
                       badgeColor:surgeCd?'#ff4d4d':boostCh>0?'#00c37b':'#ffc100',
                       sub:boostCh>0?'Free · 4h reset':surgeCd||'⭐ Stars',
-                      canUse:mining&&!activeBoost&&!surgeCd&&boostCh>0,
+                      canUse:mining&&!activeBoost&&surgeReady,
                       onTap: async () => {
-                        if (!mining || activeBoost || surgeCd || !boostCh) return
+                        if (!mining || activeBoost || !surgeReady) return
                         console.log('Activating surge boost');
                         try {
                           const res = await api.boosts.activate('surge')
@@ -2744,9 +2744,9 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                       badge:activeBoost?.label==='5× SURGE'?`${activeBoost.rem}s`:turboCd?turboCd:turboCh>0?'FREE':'30⭐',
                       badgeColor:turboCd?'#ff4d4d':turboCh>0?'#00c37b':'#ffc100',
                       sub:turboCh>0?'Free · 6h reset':turboCd||'⭐ Stars',
-                      canUse:mining&&!activeBoost&&!turboCd&&turboCh>0,
+                      canUse:mining&&!activeBoost&&turboReady,
                       onTap: async () => {
-                        if (!mining || activeBoost || turboCd || !turboCh) return
+                        if (!mining || activeBoost || !turboReady) return
                         console.log('Activating turbo boost');
                         try {
                           const res = await api.boosts.activate('turbo')
