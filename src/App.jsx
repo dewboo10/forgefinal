@@ -1553,9 +1553,42 @@ const [coolingWarning,setCoolingWarning]=useState(false);
       if(!d.ok||!d.invoiceLink) throw new Error(d.error||'Failed to get invoice');
       console.log('Invoice link received:', d.invoiceLink);
       if(tg?.openInvoice){
-        tg.openInvoice(d.invoiceLink,(status)=>{
+        tg.openInvoice(d.invoiceLink,async(status)=>{
           console.log('Stars payment status:', status);
-          if(status==='paid'){showToast('⭐','Payment successful!','Item will activate shortly');}
+          if(status==='paid'){
+            // For boosts: immediately activate via the boost endpoint
+            if(itemId==='boost_surge'||itemId==='boost_turbo'){
+              const boostType=itemId==='boost_surge'?'surge':'turbo';
+              try{
+                const res=await api.boosts.activate(boostType);
+                if(itemId==='boost_surge'){
+                  setAB({mult:3,rem:60,label:'3× SURGE',activatedAt:Date.now()});
+                  setSurgeUsedAt(res.activatedAt);
+                  setBoostCh(0);
+                  showToast('⚡','3× SURGE Active!','60 seconds · paid');
+                } else {
+                  setAB({mult:5,rem:90,label:'5× TURBO',activatedAt:Date.now()});
+                  setTurboUsedAt(res.activatedAt);
+                  setTurboCh(0);
+                  showToast('🔥','5× TURBO Active!','90 seconds · paid');
+                }
+              }catch(e){
+                // Charge was added to DB — let user tap manually
+                if(itemId==='boost_surge') setBoostCh(c=>c+1);
+                else setTurboCh(c=>c+1);
+                showToast('⭐','Charge added!','Tap the boost button to activate');
+              }
+            } else {
+              // For other items (automine, chest, etc) refresh state from server
+              try{
+                const state=await api.mining.getState();
+                if(state.has_automine||state.automine_lifetime) setPurch(p=>({...p,[itemId]:true}));
+                if(state.speed_perm) setPurch(p=>({...p,speed_perm:true}));
+                if(typeof state.balance==='number') setCommitted(c=>({...c,balance:state.balance,totalMined:Math.max(c.totalMined,state.totalMined||state.total_mined||0)}));
+              }catch(e){}
+              showToast('⭐','Payment successful!','Item activated');
+            }
+          }
           else if(status==='cancelled'){showToast('✕','Cancelled','No charge was made');}
           else if(status==='failed'){showToast('❌','Payment failed','Please try again');}
         });
@@ -1847,12 +1880,12 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
       console.log('Purchase verified successfully:', res);
       // Handle one-time boost activations (not permanent purchases)
       if(item.id==='boost_surge'){
-        setAB({mult:3,rem:60,label:'3× SURGE'});
+        setAB({mult:3,rem:60,label:'3× SURGE',activatedAt:Date.now()});
         showToast('⚡','3× SURGE Active!','60 seconds · paid');
         addLog('info','⚡ Paid SURGE activated');
       } else if(item.id==='boost_turbo'){
-        setAB({mult:2,rem:90,label:'TURBO'});
-        showToast('🔥','TURBO Active!','90 seconds · paid');
+        setAB({mult:5,rem:90,label:'5× TURBO',activatedAt:Date.now()});
+        showToast('🔥','5× TURBO Active!','90 seconds · paid');
         addLog('info','🔥 Paid TURBO activated');
       } else if(item.type==='chest'){
         // Chest: FRG credited, not added to purchased
