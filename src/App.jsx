@@ -1506,8 +1506,6 @@ export default function App(){
   const [boostCh,setBoostCh]=useState(0); // 3× SURGE charges — hydrated from server
   const [turboCh,setTurboCh]=useState(0); // 5× TURBO charges — hydrated from server
   // Timestamps when free charge was last used (for cooldown)
-  const [surgeUsedAt,setSurgeUsedAt]=useState(null);  // 4h cooldown
-  const [turboUsedAt,setTurboUsedAt]=useState(null);  // 6h cooldown
   const [now,setNow]=useState(Date.now());
   const [nowMs,setNowMs]=useState(() => Date.now());
   const [activeBoost,setAB]=useState(null);
@@ -1657,8 +1655,6 @@ localStorage.removeItem('forge_last_active');
         setUpgrades(normUpg);
 
         // ── NEW: hydrate boost cooldowns from server so reload can't bypass them ──
-        if (state.surge_used_at) setSurgeUsedAt(state.surge_used_at)
-        if (state.turbo_used_at) setTurboUsedAt(state.turbo_used_at)
 if (typeof state.boost_charges === 'number') setBoostCh(state.boost_charges)
 if (typeof state.turbo_charges === 'number') setTurboCh(state.turbo_charges)
 if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
@@ -2041,24 +2037,16 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
     return()=>clearInterval(boostR.current);
   },[activeBoost?.label]);
 
-  // Clock tick for cooldown countdowns
+  // Clock tick — only needed for active boost countdown timer
   useEffect(()=>{
-    const t=setInterval(()=>{
-      const n=Date.now();
-      setNow(n);
-      // (surgeReady / turboReady already handle free-charge availability — no setBoostCh needed here)
-    },1000);
+    const t=setInterval(()=>setNow(Date.now()),1000);
     return()=>clearInterval(t);
-  },[surgeUsedAt,turboUsedAt]);
+  },[]);
 
-  // Helper: format ms remaining as "Xh Xm Xs"
-  const fmtCd=(ms)=>{ const s=Math.ceil(ms/1000),h=~~(s/3600),m=~~((s%3600)/60),ss=s%60; return h?`${h}h ${m}m`:m?`${m}m ${ss}s`:`${ss}s`; };
-  // surgeReady: true if free charge available (never used OR cooldown expired) OR has paid charges
-  const surgeReady=!surgeUsedAt||boostCh>0||(now-surgeUsedAt>=4*3600000);
-  const turboReady=!turboUsedAt||turboCh>0||(now-turboUsedAt>=6*3600000);
-  // surgeCd: only show countdown when no paid charges AND cooldown is active
-  const surgeCd=(!surgeReady&&surgeUsedAt)?fmtCd(4*3600000-(now-surgeUsedAt)):null;
-  const turboCd=(!turboReady&&turboUsedAt)?fmtCd(6*3600000-(now-turboUsedAt)):null;
+  // No cooldown — boosts are charge-based only. Users get 1 free each on signup,
+  // then must buy more with Stars.
+  const surgeReady=boostCh>0;
+  const turboReady=turboCh>0;
 
   const lastRefresh = useRef(0);
 
@@ -2687,9 +2675,9 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                     {
                       key:'surge',label:'3× Surge',icon:'⚡',
                       active:activeBoost?.label==='3× SURGE',
-                      badge:activeBoost?.label==='3× SURGE'?`${activeBoost.rem}s`:surgeCd?surgeCd:boostCh>0?'FREE':'1⭐',
-                      badgeColor:surgeCd?'#ff4d4d':boostCh>0?'#00c37b':'#ffc100',
-                      sub:boostCh>0?'Free · 4h reset':surgeCd||'⭐ Stars',
+                      badge:activeBoost?.label==='3× SURGE'?`${activeBoost.rem}s`:boostCh>0?`${boostCh} charge${boostCh>1?'s':''}`:'1⭐',
+                      badgeColor:boostCh>0?'#00c37b':'#ffc100',
+                      sub:boostCh>0?'Tap to activate':'Buy with Stars',
                       canUse:mining&&!activeBoost&&surgeReady,
                       onTap: async () => {
                         if (!mining || activeBoost || !surgeReady) return
@@ -2699,14 +2687,12 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                           console.log('Surge boost activated:', res);
                           setAB({ mult: 3, rem: 60, label: '3× SURGE', activatedAt: Date.now() })
                           setBoostCh(0)
-                          setSurgeUsedAt(res.activatedAt)   // use server timestamp
+
                           showToast('⚡', '3× SURGE Active', '60 seconds')
                    } catch (e) {
   console.error('Surge boost activation error:', e);
   const msg = e?.message || ''
   if (msg.includes('429') || msg.includes('Cooldown') || msg.includes('cooldown')) {
-    showToast('⏳', 'Cooldown Active', 'Not ready yet')
-  } else if (msg.includes('charges') || msg.includes('No charges')) {
     showToast('⚡', 'No charges left', 'Buy more with Stars')
   } else {
     showToast('❌', 'Boost failed', e?.message || 'Try again')
@@ -2727,9 +2713,9 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                     {
                       key:'turbo',label:'5× Turbo',icon:'🔥',
                       active:activeBoost?.label==='5× TURBO',
-                      badge:activeBoost?.label==='5× TURBO'?`${activeBoost.rem}s`:turboCd?turboCd:turboCh>0?'FREE':'30⭐',
-                      badgeColor:turboCd?'#ff4d4d':turboCh>0?'#00c37b':'#ffc100',
-                      sub:turboCh>0?'Free · 6h reset':turboCd||'⭐ Stars',
+                      badge:activeBoost?.label==='5× TURBO'?`${activeBoost.rem}s`:turboCh>0?`${turboCh} charge${turboCh>1?'s':''}`:'30⭐',
+                      badgeColor:turboCh>0?'#00c37b':'#ffc100',
+                      sub:turboCh>0?'Tap to activate':'Buy with Stars',
                       canUse:mining&&!activeBoost&&turboReady,
                       onTap: async () => {
                         if (!mining || activeBoost || !turboReady) return
@@ -2739,14 +2725,12 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                           console.log('Turbo boost activated:', res);
                           setAB({ mult: 5, rem: 90, label: '5× TURBO', activatedAt: Date.now() })
                           setTurboCh(0)
-                          setTurboUsedAt(res.activatedAt)   // use server timestamp
+
                           showToast('🔥', '5× SURGE Active', '60 seconds')
                      } catch (e) {
   console.error('Turbo boost activation error:', e);
   const msg = e?.message || ''
   if (msg.includes('429') || msg.includes('Cooldown') || msg.includes('cooldown')) {
-    showToast('⏳', 'Cooldown Active', 'Not ready yet')
-  } else if (msg.includes('charges') || msg.includes('No charges')) {
     showToast('🔥', 'No charges left', 'Buy more with Stars')
   } else {
     showToast('❌', 'Boost failed', e?.message || 'Try again')
