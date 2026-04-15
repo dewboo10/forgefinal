@@ -303,7 +303,7 @@ const MOCK_CIRCLE = [
 ];
 
 const DAYS = ["M","T","W","T","F","S","S"];
-const MILESTONES = [1000,5000,20000,100000,500000,2000000,10000000];
+const MILESTONES = [1000,5000,20000,100000,500000,2000000,10000000,50000000,100000000,500000000,1000000000,5000000000,10000000000,50000000000,100000000000];
 
 function fmt(n){ if(n>=1e9)return(n/1e9).toFixed(2)+"B"; if(n>=1e6)return(n/1e6).toFixed(2)+"M"; if(n>=1e3)return(n/1e3).toFixed(1)+"K"; return n.toFixed(1); }
 function calcEffectiveRate(upgObj={},purchased=[]){
@@ -2780,7 +2780,7 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                 <div style={{padding:'0 20px 14px'}}>
                   <div style={{display:'flex',justifyContent:'space-between',marginBottom:5}}>
                     <span style={{fontSize:10,color:'rgba(255,255,255,.18)',fontWeight:500}}>Milestone</span>
-                    <span style={{fontSize:10,fontWeight:700,color:milePct>75?'#00c37b':'rgba(255,255,255,.18)'}}>{milestoneCompleted?'ALL MILESTONES REACHED':`${fmt(balance)} / ${fmt(curM)}`}</span>
+                    <span style={{fontSize:10,fontWeight:700,color:milePct>75?'#00c37b':'rgba(255,255,255,.18)'}}>{milestoneCompleted?`${fmt(balance)} / ${fmt(curM)} ✓`:`${fmt(balance)} / ${fmt(curM)}`}</span>
                   </div>
                   <div style={{height:3,borderRadius:100,background:'rgba(255,255,255,.05)',overflow:'hidden'}}>
                     <div style={{height:'100%',width:`${milePct}%`,borderRadius:100,background:'#00c37b',transition:'width .6s',boxShadow:milePct>5?'0 0 6px rgba(0,195,123,.35)':undefined}}/>
