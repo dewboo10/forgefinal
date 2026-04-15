@@ -2277,8 +2277,11 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
   };
 
   // Milestone
-  const mIdx=MILESTONES.findIndex(m=>m>balance),prevM=mIdx>0?MILESTONES[mIdx-1]:0,curM=MILESTONES[mIdx]||MILESTONES[MILESTONES.length-1];
-  const milePct=Math.min(100,((balance-prevM)/(curM-prevM))*100);
+  const mIdx=MILESTONES.findIndex(m=>m>balance);
+  const milestoneCompleted=mIdx===-1;
+  const prevM=milestoneCompleted?MILESTONES[MILESTONES.length-1]:(mIdx>0?MILESTONES[mIdx-1]:0);
+  const curM=milestoneCompleted?MILESTONES[MILESTONES.length-1]:MILESTONES[mIdx];
+  const milePct=milestoneCompleted?100:Math.min(100,((balance-prevM)/(curM-prevM))*100);
 
   const nextTier=REF_TIERS.find(t=>simRefs<t.refs);
   const prevTierRefs=nextTier?(REF_TIERS[REF_TIERS.indexOf(nextTier)-1]?.refs||0):0;
@@ -2777,7 +2780,7 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                 <div style={{padding:'0 20px 14px'}}>
                   <div style={{display:'flex',justifyContent:'space-between',marginBottom:5}}>
                     <span style={{fontSize:10,color:'rgba(255,255,255,.18)',fontWeight:500}}>Milestone</span>
-                    <span style={{fontSize:10,fontWeight:700,color:milePct>75?'#00c37b':'rgba(255,255,255,.18)'}}>{fmt(balance)} / {fmt(curM)}</span>
+                    <span style={{fontSize:10,fontWeight:700,color:milePct>75?'#00c37b':'rgba(255,255,255,.18)'}}>{milestoneCompleted?'ALL MILESTONES REACHED':`${fmt(balance)} / ${fmt(curM)}`}</span>
                   </div>
                   <div style={{height:3,borderRadius:100,background:'rgba(255,255,255,.05)',overflow:'hidden'}}>
                     <div style={{height:'100%',width:`${milePct}%`,borderRadius:100,background:'#00c37b',transition:'width .6s',boxShadow:milePct>5?'0 0 6px rgba(0,195,123,.35)':undefined}}/>
