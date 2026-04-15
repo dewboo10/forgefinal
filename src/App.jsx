@@ -1684,6 +1684,9 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
           (storeData.purchased||[]).forEach(id=>{ map[id]=true; });
           (user.purchased||[]).forEach(id=>{ map[id]=true; });
           setPurch(map);
+          // Authoritative automine expiry from store endpoint (overrides mining state if more current)
+          if(storeData.automine_until) setAutomineUntil(storeData.automine_until);
+          if(storeData.automine_lifetime) setAutomineLifetime(true);
         }catch(e){
           setPurch(Object.fromEntries((user.purchased||[]).map(k=>[k,true])));
         }
@@ -3010,14 +3013,15 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                 {(storeTab==='all'||storeTab==='automine')&&(
                   <div style={{borderBottom:'1px solid rgba(255,255,255,.05)'}}>
                     <div style={{padding:'14px 20px 4px',fontSize:9,fontWeight:600,color:'rgba(255,255,255,.18)',letterSpacing:'.12em',textTransform:'uppercase'}}>Auto-Mine</div>
-                    {!purchased['auto_lifetime']?(
+                    {!automineLifetime?(
                       <div style={{display:'flex',flexDirection:'column',gap:0}}>
                         {[
                           {id:'auto_lifetime',icon:'♾️',name:'Lifetime Auto-Mine',desc:'Mine 24/7 forever — even offline',price:30,  badge:'FOREVER', highlight:true},
                           {id:'auto_30d',    icon:'autobot',name:'30 Day Auto-Mine',  desc:'Best monthly value',             price:10,  badge:'POPULAR', highlight:false},
                           {id:'auto_7d',     icon:'autobot',name:'7 Day Auto-Mine',   desc:'Start earning offline today',    price:3,   badge:null,      highlight:false},
                         ].map(item=>{
-                          const owned=!!purchased[item.id];
+                          // For time-based automine, active = server-confirmed expiry not passed
+                          const owned = item.id==='auto_lifetime' ? automineLifetime : hasAutoMine;
                           return(
                             <div key={item.id} onClick={()=>!owned&&handleBuy({...item,priceTON:item.price,shortDesc:item.desc,earningNote:item.id==='auto_lifetime'?'Pays for itself in ~3 days':'Upgrade to Lifetime for best value'})}
                               style={{padding:'14px 20px',display:'flex',alignItems:'center',gap:12,cursor:owned?'default':'pointer',position:'relative',overflow:'hidden',borderBottom:'1px solid rgba(255,255,255,.04)',WebkitTapHighlightColor:'transparent',background:item.highlight&&!owned?'rgba(192,124,240,.04)':'transparent'}}>
@@ -3034,7 +3038,13 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                               </div>
                               <div style={{textAlign:'right',flexShrink:0}}>
                                 {owned
-                                  ?<div style={{fontSize:11,fontWeight:700,color:'#00c37b'}}>✓ Active</div>
+                                  ?<div style={{textAlign:'right'}}>
+                                    <div style={{fontSize:13,fontWeight:800,color:'#00c37b',lineHeight:1}}>
+                                      {item.id==='auto_lifetime'?'∞':''}
+                                      {item.id!=='auto_lifetime'&&automineRemDays!=null?`${automineRemDays}d`:''}
+                                    </div>
+                                    <div style={{fontSize:9,color:'rgba(0,195,123,.6)',marginTop:2}}>{item.id==='auto_lifetime'?'lifetime':'left'}</div>
+                                  </div>
                                   :<>
                                     <div style={{fontSize:16,fontWeight:800,color:'#fff',lineHeight:1}}>{item.price}</div>
                                     <div style={{fontSize:9,color:'rgba(255,255,255,.3)'}}>TON</div>
