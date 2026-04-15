@@ -1421,7 +1421,7 @@ function HalvingDropdown({effectiveRate, totalUsers, onInvite}){
 }
 
 /* ═══ NODE EXPANDABLE ═══ */
-function NodeExpandable({t,r,g,b,mining,effectiveRate,hasAutoMine,purchased,upgrades,activeModules,onUpgrade}){
+function NodeExpandable({t,r,g,b,mining,effectiveRate,hasAutoMine,automineRemDays,purchased,upgrades,activeModules,onUpgrade}){
   const [open,setOpen]=useState(false);
   return(
     <div style={{borderRadius:16,border:'1px solid var(--br)',background:'var(--card)',marginBottom:12,overflow:'hidden'}}>
@@ -1435,7 +1435,7 @@ function NodeExpandable({t,r,g,b,mining,effectiveRate,hasAutoMine,purchased,upgr
             {mining&&<div style={{width:5,height:5,borderRadius:'50%',background:'var(--green)',animation:'sdot 2s infinite',flexShrink:0}}/>}
           </div>
           <div style={{fontSize:11,color:'var(--tx3)',fontWeight:500}}>
-            {activeModules}/5 modules · {hasAutoMine&&<span style={{color:'var(--green)'}}>auto-mine · </span>}{purchased['speed_perm']&&<span style={{color:'#b464ff'}}>2× core · </span>}{effectiveRate.toFixed(3)} FRG/s
+            {activeModules}/5 modules · {hasAutoMine&&<span style={{color:'var(--green)'}}>auto-mine{automineRemDays===null?' ∞':` ${automineRemDays}d`} · </span>}{purchased['speed_perm']&&<span style={{color:'#b464ff'}}>2× core · </span>}{effectiveRate.toFixed(3)} FRG/s
           </div>
         </div>
         <div style={{display:'flex',alignItems:'center',gap:8,flexShrink:0}}>
@@ -1501,6 +1501,8 @@ export default function App(){
   const [missionPoints,setMP]=useState(0);
   const [claimedCPs,setCC]=useState({});
   const [purchased,setPurch]=useState({});
+  const [automineUntil,setAutomineUntil]=useState(null);     // ISO string from server
+  const [automineLifetime,setAutomineLifetime]=useState(false);
   const [particles,setPart]=useState([]);
   const [toast,setToast]=useState(null);
   const [boostCh,setBoostCh]=useState(0); // 3× SURGE charges — hydrated from server
@@ -1566,6 +1568,8 @@ const [coolingWarning,setCoolingWarning]=useState(false);
               try{
                 const state=await api.mining.getState();
                 if(state.has_automine||state.automine_lifetime) setPurch(p=>({...p,[itemId]:true}));
+                if(state.automine_until) setAutomineUntil(state.automine_until);
+                if(state.automine_lifetime) setAutomineLifetime(true);
                 if(state.speed_perm) setPurch(p=>({...p,speed_perm:true}));
                 if(typeof state.balance==='number') setCommitted(c=>({...c,balance:state.balance,totalMined:Math.max(c.totalMined,state.totalMined||state.total_mined||0)}));
               }catch(e){}
@@ -1658,6 +1662,8 @@ localStorage.removeItem('forge_last_active');
 if (typeof state.boost_charges === 'number') setBoostCh(state.boost_charges)
 if (typeof state.turbo_charges === 'number') setTurboCh(state.turbo_charges)
 if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
+        if (state.automine_until) setAutomineUntil(state.automine_until);
+        if (state.automine_lifetime) setAutomineLifetime(true);
 
         if (state.mining) setMining(true);
 
@@ -2222,6 +2228,8 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
         const state = await api.mining.getState();
         const hasAutoNow = state.has_automine || state.automine_lifetime;
         if(hasAutoNow) setPurch(p=>({...p,[`reward_auto_${tier.refs}`]:true}));
+        if(state.automine_until) setAutomineUntil(state.automine_until);
+        if(state.automine_lifetime) setAutomineLifetime(true);
         if(state.speed_perm) setPurch(p=>({...p,speed_perm:true}));
         if(state.boost && new Date(state.boost.until)>new Date()){
           const mult=state.boost.type==='5x_turbo'?5:3;
@@ -2289,7 +2297,11 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
 
   const logColors={pos:'#5ec98a',neg:'#e05555',info:'#e8b84b',blk:'#c07cf0'};
 
-  const hasAutoMine=purchased['auto_7d']||purchased['auto_30d']||purchased['auto_lifetime']||Object.keys(purchased).some(k=>k.startsWith('reward_auto_'));
+  // hasAutoMine: use server-side expiry truth, not just purchased keys
+  const _automineActive = automineLifetime || (automineUntil && new Date(automineUntil) > new Date());
+  const hasAutoMine = _automineActive || false;
+  // How many full days remain (null = lifetime, 0 = expired/none)
+  const automineRemDays = automineLifetime ? null : (automineUntil && new Date(automineUntil) > new Date() ? Math.max(1, Math.ceil((new Date(automineUntil)-Date.now())/(1000*60*60*24))) : 0);
   const hasPermBoost=purchased['speed_perm'];
   const activeItemIds=Object.keys(purchased);
   const [streak,setStreak]=useState(0);
@@ -2803,7 +2815,7 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                     const tiers=[{name:'Genesis Node',color:'rgba(255,255,255,.22)',icon:'◈'},{name:'Spark Node',color:'#ffc100',icon:'◉'},{name:'Plasma Node',color:'#ff6b3d',icon:'◎'},{name:'Quantum Node',color:'#5096ff',icon:'⬡'},{name:'Dark Matter',color:'#b464ff',icon:'✦'},{name:'Singularity',color:'#fff',icon:'⊕'}];
                     const t=tiers[tier];
                     const activeModules=UPGRADES.filter(u=>(upgrades[u.id]||upgrades[String(u.id)]||0)>0).length;
-                    return <NodeExpandable t={t} r={0} g={0} b={0} mining={mining} effectiveRate={effectiveRate} hasAutoMine={hasAutoMine} purchased={purchased} upgrades={upgrades} activeModules={activeModules} onUpgrade={()=>setTab('store')}/>;
+                    return <NodeExpandable t={t} r={0} g={0} b={0} mining={mining} effectiveRate={effectiveRate} hasAutoMine={hasAutoMine} automineRemDays={automineRemDays} purchased={purchased} upgrades={upgrades} activeModules={activeModules} onUpgrade={()=>setTab('store')}/>;
                   })()}
                   <div style={{height:1,background:'rgba(255,255,255,.05)'}}/>
 
@@ -3699,7 +3711,7 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                   </div>
                   <div style={{display:'flex',justifyContent:'center',gap:6,flexWrap:'wrap',marginBottom:14}}>
                     <span style={{fontSize:9,padding:'2px 7px',borderRadius:4,background:'rgba(255,255,255,.06)',color:'rgba(255,255,255,.35)'}}>MINER</span>
-                    {hasAutoMine&&<span style={{fontSize:9,padding:'2px 7px',borderRadius:4,background:'rgba(0,195,123,.08)',color:'#00c37b',display:'flex',alignItems:'center',gap:3}}><svg width="10" height="10" viewBox="0 0 20 20" fill="none"><rect x="3" y="7" width="14" height="10" rx="3" fill="#00c37b"/><circle cx="7" cy="11" r="2" fill="#000"/><circle cx="13" cy="11" r="2" fill="#000"/><line x1="10" y1="2" x2="10" y2="7" stroke="#00c37b" strokeWidth="1.5" strokeLinecap="round"/></svg>AUTO-MINE</span>}
+                    {hasAutoMine&&<span style={{fontSize:9,padding:'2px 7px',borderRadius:4,background:'rgba(0,195,123,.08)',color:'#00c37b',display:'flex',alignItems:'center',gap:3}}><svg width="10" height="10" viewBox="0 0 20 20" fill="none"><rect x="3" y="7" width="14" height="10" rx="3" fill="#00c37b"/><circle cx="7" cy="11" r="2" fill="#000"/><circle cx="13" cy="11" r="2" fill="#000"/><line x1="10" y1="2" x2="10" y2="7" stroke="#00c37b" strokeWidth="1.5" strokeLinecap="round"/></svg>AUTO-MINE{automineRemDays===null?' ∞':` ${automineRemDays}d`}</span>}
                     {hasPermBoost&&<span style={{fontSize:9,padding:'2px 7px',borderRadius:4,background:'rgba(180,100,255,.08)',color:'#b464ff'}}>⚡ 2× CORE</span>}
                     {simRefs>0&&<span style={{fontSize:9,padding:'2px 7px',borderRadius:4,background:'rgba(80,150,255,.08)',color:'#5096ff'}}>👥 {simRefs} REFS</span>}
                   </div>
@@ -3819,7 +3831,7 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                   <div style={{fontSize:9,fontWeight:600,color:'rgba(255,255,255,.18)',letterSpacing:'.12em',textTransform:'uppercase',marginBottom:4}}>Account</div>
                 </div>
                 {[
-                  {icon:'🤖',name:'Auto-Mine',sub:hasAutoMine?'Active — earning while offline':'Not active — set up now',action:()=>setTab('store'),badge:hasAutoMine?'ACTIVE':null,c:'#00c37b'},
+                  {icon:'🤖',name:'Auto-Mine',sub:hasAutoMine?(automineRemDays===null?'Active forever — lifetime pass':`Active — ${automineRemDays}d remaining`):'Not active — set up now',action:()=>setTab('store'),badge:hasAutoMine?'ACTIVE':null,c:'#00c37b'},
                   {icon:'⚡',name:'Upgrades',sub:`${Object.keys(purchased).length} items · more available`,action:()=>setTab('store'),c:'#ffc100'},
                   {icon:'gift',name:'Daily Reward',sub:`Streak: ${streak} days`,action:async()=>{
                     try{
