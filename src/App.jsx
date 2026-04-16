@@ -1498,7 +1498,6 @@ export default function App(){
   const [sessT,setSessT]=useState(0);
   const [referralCount]=useState(2);
   const [referralEarnings,setReferralEarnings]=useState(0);
-  const [spentUpgrades,setSpentUpgrades]=useState(0);
   const [missionPoints,setMP]=useState(0);
   const [claimedCPs,setCC]=useState({});
   const [purchased,setPurch]=useState({});
@@ -1658,7 +1657,6 @@ localStorage.removeItem('forge_last_active');
         const normUpg = {};
         Object.entries(rawUpg).forEach(([k,v]) => { normUpg[Number(k)]=v; normUpg[String(k)]=v; });
         setUpgrades(normUpg);
-        if (typeof state.total_spent_upgrades === 'number') setSpentUpgrades(state.total_spent_upgrades);
 
         // ── NEW: hydrate boost cooldowns from server so reload can't bypass them ──
 if (typeof state.boost_charges === 'number') setBoostCh(state.boost_charges)
@@ -2090,7 +2088,6 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
         const normUpg = {};
         Object.entries(rawUpg).forEach(([k,v]) => { normUpg[Number(k)]=v; normUpg[String(k)]=v; });
         setUpgrades(normUpg);
-        if (typeof state.total_spent_upgrades === 'number') setSpentUpgrades(state.total_spent_upgrades);
         setMining(!!state.mining);
         if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult);
         // Hydrate active boost on tab switch so rate stays accurate
@@ -3102,8 +3099,6 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                               console.log('Upgrade bought successfully:', res);
                               if(typeof res?.newBalance==='number') setCommitted(c => ({ ...c, balance: res.newBalance }));
                               if(res?.new_level !== undefined) setUpgrades(p=>{const n={...p};n[u.id]=res.new_level;n[String(u.id)]=res.new_level;return n;});
-                              // Update upgrade spend so earnings breakdown reflects the purchase immediately
-                              setSpentUpgrades(s => s + cost);
                             }).catch((e)=>{ console.error('Buy upgrade error:', e); });
                           })()} style={{borderRadius:10,background:maxed?'rgba(0,195,123,.04)':can?'rgba(255,255,255,.04)':'rgba(255,255,255,.02)',border:`1px solid ${maxed?'rgba(0,195,123,.15)':can?'rgba(255,255,255,.1)':'rgba(255,255,255,.05)'}`,padding:'12px',cursor:can?'pointer':'default',WebkitTapHighlightColor:'transparent',position:'relative',overflow:'hidden'}}>
                             <svg style={{position:'absolute',top:0,right:0,opacity:.06,pointerEvents:'none'}} width="60" height="60" viewBox="0 0 60 60">
@@ -3744,12 +3739,14 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                 <div style={{padding:'14px 20px',borderBottom:'1px solid rgba(255,255,255,.05)'}}>
                   <div style={{fontSize:9,fontWeight:600,color:'rgba(255,255,255,.18)',letterSpacing:'.12em',textTransform:'uppercase',marginBottom:10}}>Earnings Breakdown</div>
                   {(()=>{
-                    // spentUpgrades comes from the server (calculated from user_upgrades levels),
-                    // so it's always accurate regardless of bonus credits in the balance.
+                    // total_mined already includes mission rewards (backend adds to both).
+                    // referral commissions add ONLY to balance (not total_mined).
+                    // Spent = everything earned minus current balance.
+                    const spent=Math.max(0,Math.round(liveTotalMined+referralEarnings-liveBalance));
                     const rows=[
                       {dot:'#00c37b',l:'Mining & rewards',v:`${fmt(liveTotalMined)} FRG`},
                       {dot:'#5096ff',l:'Referral income',v:`${fmt(referralEarnings>0?referralEarnings:simRefs*1240)} FRG`,c:'#5096ff'},
-                      ...(spentUpgrades>0?[{dot:'#e05555',l:'Upgrades & boosts',v:`-${fmt(spentUpgrades)} FRG`,c:'#e05555'}]:[]),
+                      ...(spent>0?[{dot:'#e05555',l:'Upgrades & boosts',v:`-${fmt(spent)} FRG`,c:'#e05555'}]:[]),
                     ];
                     return rows.map((r,i)=>(
                       <div key={i} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'7px 0',borderBottom:'1px solid rgba(255,255,255,.04)'}}>
