@@ -1498,6 +1498,8 @@ export default function App(){
   const [sessT,setSessT]=useState(0);
   const [referralCount]=useState(2);
   const [referralEarnings,setReferralEarnings]=useState(0);
+  const [spentUpgrades,setSpentUpgrades]=useState(0);
+  const [lastBoostInfo,setLastBoostInfo]=useState(null); // {activatedAt,expiredAt,mult}
   const [missionPoints,setMP]=useState(0);
   const [claimedCPs,setCC]=useState({});
   const [purchased,setPurch]=useState({});
@@ -1657,6 +1659,7 @@ localStorage.removeItem('forge_last_active');
         const normUpg = {};
         Object.entries(rawUpg).forEach(([k,v]) => { normUpg[Number(k)]=v; normUpg[String(k)]=v; });
         setUpgrades(normUpg);
+        if (typeof state.total_spent_upgrades === 'number') setSpentUpgrades(state.total_spent_upgrades);
 
         // ── NEW: hydrate boost cooldowns from server so reload can't bypass them ──
 if (typeof state.boost_charges === 'number') setBoostCh(state.boost_charges)
@@ -1922,10 +1925,24 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
   if (mining && elapsedSecs > 0) {
     const baseEffRate = (baseRate + upgradeRate) * permMult * halvingMult;
     if (activeBoost?.activatedAt && activeBoost.activatedAt > (sessionStart || 0)) {
+      // CASE 1: charge boost currently active — split pre/post boost
       const preBoostSecs  = Math.max(0, (activeBoost.activatedAt - (sessionStart || 0)) / 1000);
       const postBoostSecs = Math.max(0, (nowMs - activeBoost.activatedAt) / 1000);
       pendingEarnings = preBoostSecs * baseEffRate + postBoostSecs * effectiveRate;
+    } else if (lastBoostInfo?.expiredAt && lastBoostInfo.expiredAt > (sessionStart || 0)) {
+      // CASE 2: charge boost expired this session — 3 segments so the balance
+      // doesn't snap back when effectiveRate drops to base at expiry.
+      // effectiveRate here is the rate WITHOUT the expired charge boost (base + upgrades
+      // + permMult + speedBoostMult + halvingMult — everything still active).
+      const ss = sessionStart || 0;
+      const boostStart      = Math.max(lastBoostInfo.activatedAt, ss);
+      const preBoostSecs    = Math.max(0, (boostStart - ss) / 1000);
+      const duringBoostSecs = Math.max(0, (lastBoostInfo.expiredAt - boostStart) / 1000);
+      const postBoostSecs   = Math.max(0, (nowMs - lastBoostInfo.expiredAt) / 1000);
+      const duringBoostRate = effectiveRate * lastBoostInfo.mult; // re-add the charge multiplier
+      pendingEarnings = (preBoostSecs + postBoostSecs) * effectiveRate + duringBoostSecs * duringBoostRate;
     } else {
+      // CASE 3: no boost
       pendingEarnings = elapsedSecs * effectiveRate;
     }
   }
@@ -1967,6 +1984,8 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
             blocks:       typeof res.blocks_found === 'number' ? res.blocks_found : c.blocks,
             sessionStart: Date.now(),
           }));
+          // Session reset — old boost info is no longer relevant
+          setLastBoostInfo(null);
         }
       }catch(e){
         console.error('Heartbeat error:', e);
@@ -2042,7 +2061,18 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
   // Boost countdown
   useEffect(()=>{
     if(!activeBoost)return;
-    boostR.current=setInterval(()=>setAB(b=>{ if(!b||b.rem<=1){clearInterval(boostR.current);return null;} return{...b,rem:b.rem-1};}),1000);
+    // Capture activatedAt and mult so they survive the null transition
+    const { activatedAt, mult } = activeBoost;
+    boostR.current=setInterval(()=>setAB(b=>{
+      if(!b||b.rem<=1){
+        clearInterval(boostR.current);
+        // Record boost expiry so pendingEarnings can calculate 3 segments and
+        // avoid the visual snap-back when effectiveRate drops back to base.
+        setLastBoostInfo({ activatedAt, mult, expiredAt: Date.now() });
+        return null;
+      }
+      return{...b,rem:b.rem-1};
+    }),1000);
     return()=>clearInterval(boostR.current);
   },[activeBoost?.label]);
 
@@ -2088,6 +2118,7 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
         const normUpg = {};
         Object.entries(rawUpg).forEach(([k,v]) => { normUpg[Number(k)]=v; normUpg[String(k)]=v; });
         setUpgrades(normUpg);
+        if (typeof state.total_spent_upgrades === 'number') setSpentUpgrades(state.total_spent_upgrades);
         setMining(!!state.mining);
         if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult);
         // Hydrate active boost on tab switch so rate stays accurate
@@ -2117,6 +2148,15 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
       console.log('Fetching leaderboard');
       api.profile.getLeaderboard(50).then(data=>{ console.log('Leaderboard loaded:', data); setLbData(data); }).catch((e)=>{ console.error('Leaderboard fetch error:', e); });
     }
+    if(tab==='profile'||tab==='refer'){
+      // Refresh referral earnings on both profile and refer tabs so the
+      // earnings breakdown in profile always shows the latest figure
+      api.referrals.getInfo().then(info=>{
+        setSimRefs(info.ref_count||0);
+        if(info.referralCode||info.ref_code) setRefCode(info.referralCode||info.ref_code);
+        if(typeof info.referral_earnings==='number') setReferralEarnings(info.referral_earnings);
+      }).catch(()=>{});
+    }
     if(tab==='refer'){
       // Sync real referral count and claimed tiers from backend
       api.referrals.getTiers().then(res=>{
@@ -2126,11 +2166,6 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
         setTiersLoaded(true);
         if(res.ref_count!=null) setSimRefs(res.ref_count);
       }).catch(()=>{ setTiersLoaded(true); });
-      api.referrals.getInfo().then(info=>{
-        setSimRefs(info.referralCount||info.ref_count||0);
-        if(info.referralCode||info.ref_code) setRefCode(info.referralCode||info.ref_code);
-        if(typeof info.referral_earnings==='number') setReferralEarnings(info.referral_earnings);
-      }).catch(()=>{});
       // Load real friends list
       api.referrals.getList().then(data=>{
         if(data?.refs) setRefList(data.refs);
@@ -2212,7 +2247,8 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
     // Refresh from backend
     try{
       const info=await api.referrals.getInfo();
-      setSimRefs(info.referralCount);
+      setSimRefs(info.ref_count||0);
+      if(typeof info.referral_earnings==='number') setReferralEarnings(info.referral_earnings);
     }catch(e){}
   };
 
@@ -3099,6 +3135,8 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                               console.log('Upgrade bought successfully:', res);
                               if(typeof res?.newBalance==='number') setCommitted(c => ({ ...c, balance: res.newBalance }));
                               if(res?.new_level !== undefined) setUpgrades(p=>{const n={...p};n[u.id]=res.new_level;n[String(u.id)]=res.new_level;return n;});
+                              // Reflect purchase in breakdown immediately without waiting for next state refresh
+                              setSpentUpgrades(s => s + cost);
                             }).catch((e)=>{ console.error('Buy upgrade error:', e); });
                           })()} style={{borderRadius:10,background:maxed?'rgba(0,195,123,.04)':can?'rgba(255,255,255,.04)':'rgba(255,255,255,.02)',border:`1px solid ${maxed?'rgba(0,195,123,.15)':can?'rgba(255,255,255,.1)':'rgba(255,255,255,.05)'}`,padding:'12px',cursor:can?'pointer':'default',WebkitTapHighlightColor:'transparent',position:'relative',overflow:'hidden'}}>
                             <svg style={{position:'absolute',top:0,right:0,opacity:.06,pointerEvents:'none'}} width="60" height="60" viewBox="0 0 60 60">
@@ -3739,14 +3777,12 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                 <div style={{padding:'14px 20px',borderBottom:'1px solid rgba(255,255,255,.05)'}}>
                   <div style={{fontSize:9,fontWeight:600,color:'rgba(255,255,255,.18)',letterSpacing:'.12em',textTransform:'uppercase',marginBottom:10}}>Earnings Breakdown</div>
                   {(()=>{
-                    // total_mined already includes mission rewards (backend adds to both).
-                    // referral commissions add ONLY to balance (not total_mined).
-                    // Spent = everything earned minus current balance.
-                    const spent=Math.max(0,Math.round(liveTotalMined+referralEarnings-liveBalance));
+                    // spentUpgrades comes from the server (sum of actual upgrade purchase costs),
+                    // so it's always accurate regardless of bonus credits inflating the balance.
                     const rows=[
                       {dot:'#00c37b',l:'Mining & rewards',v:`${fmt(liveTotalMined)} FRG`},
                       {dot:'#5096ff',l:'Referral income',v:`${fmt(referralEarnings>0?referralEarnings:simRefs*1240)} FRG`,c:'#5096ff'},
-                      ...(spent>0?[{dot:'#e05555',l:'Upgrades & boosts',v:`-${fmt(spent)} FRG`,c:'#e05555'}]:[]),
+                      ...(spentUpgrades>0?[{dot:'#e05555',l:'Upgrades & boosts',v:`-${fmt(spentUpgrades)} FRG`,c:'#e05555'}]:[]),
                     ];
                     return rows.map((r,i)=>(
                       <div key={i} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'7px 0',borderBottom:'1px solid rgba(255,255,255,.04)'}}>
