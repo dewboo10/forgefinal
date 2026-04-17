@@ -306,6 +306,10 @@ const DAYS = ["M","T","W","T","F","S","S"];
 const MILESTONES = [1000,5000,20000,100000,500000,2000000,10000000,50000000,100000000,500000000,1000000000,5000000000,10000000000,50000000000,100000000000];
 
 function fmt(n){ if(n>=1e9)return(n/1e9).toFixed(2)+"B"; if(n>=1e6)return(n/1e6).toFixed(2)+"M"; if(n>=1e3)return(n/1e3).toFixed(1)+"K"; return n.toFixed(1); }
+// fmtLive: high-precision display for live mining balance so tiny per-second increments are visible.
+// fmt() uses toFixed(1)K which requires 100 FRG change before display updates (1000s at 0.1 FRG/s).
+// fmtLive uses toFixed(3) everywhere so even 0.001 FRG changes show.
+function fmtLive(n){ if(n>=1e9)return(n/1e9).toFixed(3)+"B"; if(n>=1e6)return(n/1e6).toFixed(3)+"M"; if(n>=1e3)return(n/1e3).toFixed(3)+"K"; return n.toFixed(3); }
 function calcEffectiveRate(upgObj={},purchased=[]){
   const upgradeBonus=UPGRADES.reduce((a,u)=>a+u.rateBonus*((upgObj[u.id]||upgObj[String(u.id)])||0),0);
   const permMult=purchased.includes?.('speed_perm')||purchased['speed_perm']?2:1;
@@ -1978,6 +1982,7 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
         const res = await api.mining.heartbeat();
         console.log('Heartbeat response:', res);
         if(typeof res.balance === 'number'){
+          // Normal heartbeat sync — earned credited, session restarted server-side
           setCommitted(c => ({
             balance:      res.balance,
             totalMined:   typeof res.total_mined === 'number' ? res.total_mined : c.totalMined,
@@ -1986,6 +1991,17 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
           }));
           // Session reset — old boost info is no longer relevant
           setLastBoostInfo(null);
+        } else if (res.mining === false && miningRef.current) {
+          // Session was killed server-side (heartbeat cleanup job, stop, or DB issue).
+          // Frontend still thinks mining is active → restart session so earnings resume.
+          console.warn('[heartbeat] Session dead server-side — restarting mining session');
+          try {
+            await api.mining.start();
+            setCommitted(c => ({ ...c, sessionStart: Date.now() }));
+            console.log('[heartbeat] Mining session restarted successfully');
+          } catch(restartErr) {
+            console.error('[heartbeat] Failed to restart session:', restartErr);
+          }
         }
       }catch(e){
         console.error('Heartbeat error:', e);
@@ -1996,27 +2012,24 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
   },[mining])
 
 
-  // ── Stop mining when app closes / goes to background ──────
+  // ── Save earnings when the page is truly unloaded (browser close / navigation) ──
+  // We intentionally do NOT stop on visibilitychange — switching tabs or minimizing
+  // the Telegram app fires that event immediately and killed the mining session even
+  // for a split-second background. The server-side heartbeat cleanup already handles
+  // sessions that go truly stale (60s with no heartbeat). The only time we explicitly
+  // call stop() is on actual page/app close so the last few seconds of earnings are
+  // credited instantly rather than waiting for the cleanup job.
   useEffect(()=>{
     const handleStop = ()=>{
-      if(mining){
+      if(miningRef.current){
         api.mining.stop().catch(()=>{});
       }
     };
-    const handleVisibility = ()=>{
-      if(document.visibilityState === 'hidden') handleStop();
-    };
-    document.addEventListener('visibilitychange', handleVisibility);
     window.addEventListener('beforeunload', handleStop);
-    // Telegram WebApp close event
-    window?.Telegram?.WebApp?.onEvent?.('viewportChanged', ()=>{
-      if(window?.Telegram?.WebApp?.viewportStableHeight === 0) handleStop();
-    });
     return ()=>{
-      document.removeEventListener('visibilitychange', handleVisibility);
       window.removeEventListener('beforeunload', handleStop);
     };
-  },[mining]);
+  },[]);
 
   useEffect(()=>{
     if(!mining)return;
@@ -2404,7 +2417,7 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
         {tab!=='mine'&&(
           <div className="topbar">
             <div className="tb-balance-center">
-              <div className="tb-bal-amt">{fmt(liveBalance)}</div>
+              <div className="tb-bal-amt">{fmtLive(liveBalance)}</div>
               <div className="tb-bal-unit">FRG</div>
             </div>
           </div>
@@ -2567,7 +2580,7 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                     <line x1="100" y1="62" x2="100" y2="80" stroke="#fff" strokeWidth=".5"/>
                   </svg>
                   <div style={{fontSize:10,fontWeight:600,color:'rgba(255,255,255,.18)',letterSpacing:'.16em',textTransform:'uppercase',marginBottom:6}}>FRG Balance</div>
-                  <div className={`bal-amount${tick?' tick':''}`} style={{fontSize:'clamp(58px,15vw,76px)',fontWeight:700,color:'rgba(255,255,255,.88)',lineHeight:1,letterSpacing:'-.04em',marginBottom:8}}>{fmt(liveBalance)}</div>
+                  <div className={`bal-amount${tick?' tick':''}`} style={{fontSize:'clamp(58px,15vw,76px)',fontWeight:700,color:'rgba(255,255,255,.88)',lineHeight:1,letterSpacing:'-.04em',marginBottom:8}}>{fmtLive(liveBalance)}</div>
                   <div style={{height:22,display:'flex',alignItems:'center',justifyContent:'center'}}>
                     {mining
                       ?<div style={{display:'inline-flex',alignItems:'center',gap:5,padding:'4px 12px',borderRadius:100,background:'rgba(0,195,123,.07)',border:'1px solid rgba(0,195,123,.13)'}}>
