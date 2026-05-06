@@ -5,21 +5,21 @@
 
 import { useState, useEffect, useRef } from 'react'
 
-const STORAGE_KEY = 'forge_onboarding_done_v1'
+const STORAGE_KEY = 'hasha_onboarding_done_v1'
 
 // ─── Slide data ───────────────────────────────────────────────────────────────
 const SLIDES = [
   {
     id: 'genesis',
     headline: 'A NEW WAVE\nIS FORMING',
-    sub: 'Forge is the next chapter in crypto mining. Built on TON. Born in Telegram.',
+    sub: 'Hasha is the next chapter in crypto mining. Built on TON. Born in Telegram.',
     cta: 'BEGIN',
     accent: '#00c37b',
   },
   {
     id: 'mine',
-    headline: 'MINE FRG\nRIGHT NOW',
-    sub: 'No hardware. No electricity. Just tap — and your node starts earning FRG tokens around the clock.',
+    headline: 'MINE HASH\nRIGHT NOW',
+    sub: 'No hardware. No electricity. Just tap — and your node starts earning HASH tokens around the clock.',
     cta: 'NEXT',
     accent: '#ffffff',
   },
@@ -40,7 +40,7 @@ const SLIDES = [
   {
     id: 'launch',
     headline: 'GENESIS\nMINER',
-    sub: 'You are early. The FRG rate is at its highest right now. Every minute you wait costs you.',
+    sub: 'You are early. The HASH rate is at its highest right now. Every minute you wait costs you.',
     cta: 'START MINING',
     accent: '#00c37b',
   },
@@ -87,8 +87,8 @@ function ArtGenesis() {
           <animate attributeName="opacity" values={`${0.2+i*0.1};0.8;${0.2+i*0.1}`} dur={`${2.5+i*0.4}s`} repeatCount="indefinite"/>
         </circle>
       ))}
-      {/* FORGE word mark — ghost */}
-      <text x="160" y="165" textAnchor="middle" fontSize="11" fontWeight="800" letterSpacing="8" fill="rgba(0,195,123,0.35)" fontFamily="monospace">FORGE</text>
+      {/* HASHA word mark — ghost */}
+      <text x="160" y="165" textAnchor="middle" fontSize="11" fontWeight="800" letterSpacing="8" fill="rgba(0,195,123,0.35)" fontFamily="monospace">HASHA</text>
     </svg>
   )
 }
@@ -131,11 +131,11 @@ function ArtMine() {
       <path d="M145 138 Q138 124 143 110 Q148 96 142 82" stroke="rgba(255,255,255,0.15)" strokeWidth="0.8" strokeLinecap="round" fill="none">
         <animate attributeName="opacity" values="0.1;0.4;0.1" dur="1.8s" repeatCount="indefinite"/>
       </path>
-      {/* Floating FRG tokens */}
+      {/* Floating HASH tokens */}
       {[[90,100],[230,120],[80,200],[245,190],[160,70]].map(([x,y],i)=>(
         <g key={i}>
           <circle cx={x} cy={y} r="10" fill="rgba(0,195,123,0.1)" stroke="rgba(0,195,123,0.4)" strokeWidth="0.8"/>
-          <text x={x} y={y+4} textAnchor="middle" fontSize="7" fill="rgba(0,195,123,0.8)" fontFamily="monospace" fontWeight="700">FRG</text>
+          <text x={x} y={y+4} textAnchor="middle" fontSize="7" fill="rgba(0,195,123,0.8)" fontFamily="monospace" fontWeight="700">HSH</text>
           <animate attributeName="opacity" values="0.4;1;0.4" dur={`${2+i*0.5}s`} repeatCount="indefinite"/>
         </g>
       ))}
@@ -218,7 +218,7 @@ function ArtNetwork() {
           {n.you && <text x={n.x} y={n.y+3} textAnchor="middle" fontSize="6" fill="#000" fontWeight="900" fontFamily="monospace">YOU</text>}
         </g>
       ))}
-      {/* FRG flow arrows along two edges */}
+      {/* HASH flow arrows along two edges */}
       {[[160,155,100,105],[160,155,220,105]].map(([x1,y1,x2,y2],i)=>(
         <circle key={i} r="2.5" fill="#00c37b">
           <animateMotion dur={`${1.5+i*0.3}s`} repeatCount="indefinite" path={`M${x1},${y1} L${x2},${y2}`}/>

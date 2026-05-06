@@ -1,4 +1,4 @@
-// FORGE — Complete Interactive Preview
+// HASHA — Complete Interactive Preview
 // React + Vite: replace src/App.jsx → npm run dev
 
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -9,14 +9,14 @@ import  Preloader  from './Preloader.jsx'
 import Onboarding, { useOnboarding } from './Onboarding.jsx'
 
 const REF_TIERS = [
-  { refs:1,   icon:"🎁", label:"First Blood",      color:"#5ec98a", bg:"rgba(94,201,138,.1)",  border:"rgba(94,201,138,.22)",  reward:"3× Speed · 24H",       rewardType:"speed",    desc:"Your first recruit earns you a 24h burst",           subReward:"+5,000 FRG bonus" },
-  { refs:3,   icon:"⚡", label:"Spark Node",        color:"#5ba8e8", bg:"rgba(91,168,232,.1)",  border:"rgba(91,168,232,.22)",  reward:"Auto-Mine · 3 Days",   rewardType:"automine", desc:"3 friends = 3 days of offline earning",             subReward:"+15,000 FRG bonus" },
-  { refs:5,   icon:"🔥", label:"Live Wire",         color:"#e06c4c", bg:"rgba(224,108,76,.1)",  border:"rgba(224,108,76,.22)",  reward:"5× Speed · 7 Days",    rewardType:"speed",    desc:"5 active miners in your network",                   subReward:"+30,000 FRG bonus" },
-  { refs:10,  icon:"🤖", label:"Mining Node",       color:"#e8b84b", bg:"rgba(232,184,75,.1)",  border:"rgba(232,184,75,.22)",  reward:"Auto-Mine · 30 Days",  rewardType:"automine", desc:"A full month of passive earning, free",             subReward:"+75,000 FRG bonus" },
-  { refs:25,  icon:"💎", label:"Cluster Core",      color:"#c07cf0", bg:"rgba(192,124,240,.1)", border:"rgba(192,124,240,.22)", reward:"Permanent 2× Core",    rewardType:"permanent",desc:"25 referrals earns the permanent multiplier free",  subReward:"+200,000 FRG bonus" },
-  { refs:50,  icon:"👑", label:"Sovereign Node",    color:"#FFB800", bg:"rgba(255,184,0,.1)",   border:"rgba(255,184,0,.22)",   reward:"Auto-Mine · 60 Days",  rewardType:"automine", desc:"50 recruits = 60 days passive mining, completely free", subReward:"+500,000 FRG + SOVEREIGN badge" },
-  { refs:100, icon:"🌐", label:"Network Architect", color:"#c07cf0", bg:"rgba(192,124,240,.12)",border:"rgba(192,124,240,.3)",  reward:"Auto-Mine · 60 Days",  rewardType:"automine", desc:"100 recruits — double the rewards, 60 more days",       subReward:"+1,000,000 FRG + Network badge" },
-  { refs:200, icon:"♾️", label:"Genesis Architect", color:"#e8b84b", bg:"rgba(232,184,75,.14)", border:"rgba(232,184,75,.38)",  reward:"Auto-Mine · LIFETIME", rewardType:"lifetime", desc:"200 people in your network. Earn offline forever.", subReward:"+5,000,000 FRG + Genesis NFT", elite:true },
+  { refs:1,   icon:"🎁", label:"First Blood",      color:"#5ec98a", bg:"rgba(94,201,138,.1)",  border:"rgba(94,201,138,.22)",  reward:"3× Speed · 24H",       rewardType:"speed",    desc:"Your first recruit earns you a 24h burst",           subReward:"+5,000 HASH bonus" },
+  { refs:3,   icon:"⚡", label:"Spark Node",        color:"#5ba8e8", bg:"rgba(91,168,232,.1)",  border:"rgba(91,168,232,.22)",  reward:"Auto-Mine · 3 Days",   rewardType:"automine", desc:"3 friends = 3 days of offline earning",             subReward:"+15,000 HASH bonus" },
+  { refs:5,   icon:"🔥", label:"Live Wire",         color:"#e06c4c", bg:"rgba(224,108,76,.1)",  border:"rgba(224,108,76,.22)",  reward:"5× Speed · 7 Days",    rewardType:"speed",    desc:"5 active miners in your network",                   subReward:"+30,000 HASH bonus" },
+  { refs:10,  icon:"🤖", label:"Mining Node",       color:"#e8b84b", bg:"rgba(232,184,75,.1)",  border:"rgba(232,184,75,.22)",  reward:"Auto-Mine · 30 Days",  rewardType:"automine", desc:"A full month of passive earning, free",             subReward:"+75,000 HASH bonus" },
+  { refs:25,  icon:"💎", label:"Cluster Core",      color:"#c07cf0", bg:"rgba(192,124,240,.1)", border:"rgba(192,124,240,.22)", reward:"Permanent 2× Core",    rewardType:"permanent",desc:"25 referrals earns the permanent multiplier free",  subReward:"+200,000 HASH bonus" },
+  { refs:50,  icon:"👑", label:"Sovereign Node",    color:"#FFB800", bg:"rgba(255,184,0,.1)",   border:"rgba(255,184,0,.22)",   reward:"Auto-Mine · 60 Days",  rewardType:"automine", desc:"50 recruits = 60 days passive mining, completely free", subReward:"+500,000 HASH + SOVEREIGN badge" },
+  { refs:100, icon:"🌐", label:"Network Architect", color:"#c07cf0", bg:"rgba(192,124,240,.12)",border:"rgba(192,124,240,.3)",  reward:"Auto-Mine · 60 Days",  rewardType:"automine", desc:"100 recruits — double the rewards, 60 more days",       subReward:"+1,000,000 HASH + Network badge" },
+  { refs:200, icon:"♾️", label:"Genesis Architect", color:"#e8b84b", bg:"rgba(232,184,75,.14)", border:"rgba(232,184,75,.38)",  reward:"Auto-Mine · LIFETIME", rewardType:"lifetime", desc:"200 people in your network. Earn offline forever.", subReward:"+5,000,000 HASH + Genesis NFT", elite:true },
 ];
 
 
@@ -254,8 +254,8 @@ function TierIcon({icon, color='#fff', size=20}) {
 
 const STORE_SECTIONS = [
   { id:"auto", label:"Auto-Mine", emoji:"🤖", color:"#e8b84b", tagline:"Earn while you sleep", items:[
-    { id:"auto_7d",       name:"Auto-Mine · 7 Days",   icon:"🤖", priceTON:3,  tag:"STARTER",    tagColor:"#5ec98a", badge:"7 DAYS",   shortDesc:"Full rate while offline for 7 days",       earningNote:"At 0.1/s → +60,480 FRG offline",         color:"#e8b84b" },
-    { id:"auto_30d",      name:"Auto-Mine · 30 Days",  icon:"🤖", priceTON:10, tag:"POPULAR",    tagColor:"#e8b84b", badge:"30 DAYS",  shortDesc:"Best value — covers a full season",         earningNote:"At 0.1/s → +259,200 FRG offline",        color:"#e8b84b", flagship:true },
+    { id:"auto_7d",       name:"Auto-Mine · 7 Days",   icon:"🤖", priceTON:3,  tag:"STARTER",    tagColor:"#5ec98a", badge:"7 DAYS",   shortDesc:"Full rate while offline for 7 days",       earningNote:"At 0.1/s → +60,480 HASH offline",        color:"#e8b84b" },
+    { id:"auto_30d",      name:"Auto-Mine · 30 Days",  icon:"🤖", priceTON:10, tag:"POPULAR",    tagColor:"#e8b84b", badge:"30 DAYS",  shortDesc:"Best value — covers a full season",         earningNote:"At 0.1/s → +259,200 HASH offline",       color:"#e8b84b", flagship:true },
     { id:"auto_lifetime", name:"Auto-Mine · Lifetime", icon:"♾️", priceTON:30, tag:"BEST VALUE", tagColor:"#c07cf0", badge:"FOREVER",  shortDesc:"One purchase. Mine offline forever.",      earningNote:"Pays for itself in days then free forever.", color:"#c07cf0", flagship:true },
   ]},
   { id:"speed", label:"Speed Multipliers", emoji:"⚡", color:"#5ec98a", tagline:"Mine faster right now", items:[
@@ -263,27 +263,27 @@ const STORE_SECTIONS = [
     { id:"speed_5x",   name:"5× Speed · 7 Days",  icon:"🔥", priceTON:8,  tag:"STRONG",  tagColor:"#e06c4c",badge:"5× · 7 DAYS", shortDesc:"Best for leaderboard pushes",             earningNote:"5× faster offline with Auto-Mine",       color:"#e06c4c" },
     { id:"speed_perm", name:"Permanent 2× Core",  icon:"🔮", priceTON:18, tag:"FOREVER", tagColor:"#c07cf0",badge:"2× FOREVER",  shortDesc:"Everything you earn doubled forever",     earningNote:"Every upgrade and auto-mine multiplied by 2×", color:"#c07cf0", flagship:true },
   ]},
-  { id:"chests", label:"FRG Head Start", emoji:"📦", color:"#5ba8e8", tagline:"Skip the early grind", items:[
-    { id:"chest_s",  name:"Head Start · S",  icon:"📦", priceTON:2,  tag:null,         tagColor:null,     badge:"25K FRG",  shortDesc:"Unlock first 3 upgrades instantly",       earningNote:"Immediate rate boost pays back in 70h",      color:"#5ba8e8" },
-    { id:"chest_m",  name:"Head Start · M",  icon:"📦", priceTON:5,  tag:"VALUE",       tagColor:"#5ec98a",badge:"100K FRG", shortDesc:"Max all base upgrades day one",           earningNote:"86× faster than free users from day 1",      color:"#5ba8e8" },
-    { id:"chest_xl", name:"Head Start · XL", icon:"💎", priceTON:14, tag:"LEADERBOARD", tagColor:"#c07cf0",badge:"500K FRG", shortDesc:"Instant top-leaderboard position",        earningNote:"Top rank attracts referrals → 10% forever",  color:"#c07cf0", flagship:true },
+  { id:"chests", label:"HASH Head Start", emoji:"📦", color:"#5ba8e8", tagline:"Skip the early grind", items:[
+    { id:"chest_s",  name:"Head Start · S",  icon:"📦", priceTON:2,  tag:null,         tagColor:null,     badge:"25K HASH",  shortDesc:"Unlock first 3 upgrades instantly",      earningNote:"Immediate rate boost pays back in 70h",      color:"#5ba8e8" },
+    { id:"chest_m",  name:"Head Start · M",  icon:"📦", priceTON:5,  tag:"VALUE",       tagColor:"#5ec98a",badge:"100K HASH", shortDesc:"Max all base upgrades day one",          earningNote:"86× faster than free users from day 1",      color:"#5ba8e8" },
+    { id:"chest_xl", name:"Head Start · XL", icon:"💎", priceTON:14, tag:"LEADERBOARD", tagColor:"#c07cf0",badge:"500K HASH", shortDesc:"Instant top-leaderboard position",       earningNote:"Top rank attracts referrals → 10% forever",  color:"#c07cf0", flagship:true },
   ]},
   { id:"referral", label:"Referral Amplifiers", emoji:"👥", color:"#e06c4c", tagline:"Earn more from people you already referred", items:[
     { id:"ref_2x", name:"Referral 2× Amp", icon:"📡", priceTON:5,  tag:null,          tagColor:null,      badge:"2× PASSIVE", shortDesc:"Double what every referral earns you",    earningNote:"10 friends → earn 20% not 10%",                   color:"#e06c4c" },
-    { id:"ref_5x", name:"Referral 5× Amp", icon:"📡", priceTON:15, tag:"HIGH INCOME",  tagColor:"#e06c4c", badge:"5× PASSIVE", shortDesc:"50% of all referral earnings forever",   earningNote:"10 friends × 100 FRG/day = 500 FRG/day to you",  color:"#e06c4c", flagship:true },
+    { id:"ref_5x", name:"Referral 5× Amp", icon:"📡", priceTON:15, tag:"HIGH INCOME",  tagColor:"#e06c4c", badge:"5× PASSIVE", shortDesc:"50% of all referral earnings forever",   earningNote:"10 friends × 100 HASH/day = 500 HASH/day to you",  color:"#e06c4c", flagship:true },
   ]},
 ];
 
 const UPGRADES = [
   { id:1, name:"Neural Boost",  icon:"◈", baseCost:500,    rateBonus:0.5, maxLevel:5, color:"#e8b84b", desc:"Overclocks base processing" },
   { id:2, name:"Plasma Array",  icon:"◉", baseCost:2500,   rateBonus:2.5, maxLevel:5, color:"#e06c4c", desc:"Parallel hashing cores" },
-  { id:3, name:"Quantum Forge", icon:"◎", baseCost:10000,  rateBonus:8,   maxLevel:4, color:"#5ec98a", desc:"Quantum tunnelling" },
+  { id:3, name:"Quantum Core",  icon:"◎", baseCost:10000,  rateBonus:8,   maxLevel:4, color:"#5ec98a", desc:"Quantum tunnelling" },
   { id:4, name:"Dark Matter",   icon:"⬡", baseCost:40000,  rateBonus:25,  maxLevel:3, color:"#5ba8e8", desc:"Anti-matter collision" },
   { id:5, name:"Singularity",   icon:"✦", baseCost:180000, rateBonus:80,  maxLevel:2, color:"#c07cf0", desc:"Space-time compression" },
 ];
 
 const MISSIONS = [
-  { id:"m1", icon:"⛏", name:"The Miner",    color:"#e8b84b", key:"total",  unit:"FRG", checkpoints:[{at:1000,r:500,l:"1K"},{at:5000,r:1500,l:"5K"},{at:20000,r:5000,l:"20K"},{at:100000,r:20000,l:"100K"},{at:500000,r:80000,l:"500K"},{at:100000000,r:500000,l:"100M"},{at:1000000000,r:2000000,l:"1B"},{at:10000000000,r:10000000,l:"10B"},{at:100000000000,r:50000000,l:"100B"}] },
+  { id:"m1", icon:"⛏", name:"The Miner",    color:"#e8b84b", key:"total",  unit:"HASH", checkpoints:[{at:1000,r:500,l:"1K"},{at:5000,r:1500,l:"5K"},{at:20000,r:5000,l:"20K"},{at:100000,r:20000,l:"100K"},{at:500000,r:80000,l:"500K"},{at:100000000,r:500000,l:"100M"},{at:1000000000,r:2000000,l:"1B"},{at:10000000000,r:10000000,l:"10B"},{at:100000000000,r:50000000,l:"100B"}] },
   { id:"m2", icon:"⬡", name:"Block Hunter", color:"#c07cf0", key:"blocks", unit:"blk", checkpoints:[{at:1,r:500,l:"1"},{at:5,r:2500,l:"5"},{at:20,r:8000,l:"20"},{at:50,r:20000,l:"50"}] },
   { id:"m3", icon:"👥", name:"Recruiter",    color:"#e06c4c", key:"refs",   unit:"ref", checkpoints:[{at:1,r:5000,l:"1"},{at:5,r:30000,l:"5"},{at:10,r:100000,l:"10"},{at:25,r:500000,l:"25"}] },
   { id:"m4", icon:"⚡", name:"Speed Demon",  color:"#5ba8e8", key:"rate",   unit:"/s",  checkpoints:[{at:1,r:500,l:"1/s"},{at:5,r:3000,l:"5/s"},{at:20,r:12000,l:"20/s"},{at:50,r:30000,l:"50/s"}] },
@@ -307,8 +307,8 @@ const MILESTONES = [1000,5000,20000,100000,500000,2000000,10000000,50000000,1000
 
 function fmt(n){ if(n>=1e9)return(n/1e9).toFixed(2)+"B"; if(n>=1e6)return(n/1e6).toFixed(2)+"M"; if(n>=1e3)return(n/1e3).toFixed(1)+"K"; return n.toFixed(1); }
 // fmtLive: high-precision display for live mining balance so tiny per-second increments are visible.
-// fmt() uses toFixed(1)K which requires 100 FRG change before display updates (1000s at 0.1 FRG/s).
-// fmtLive uses toFixed(3) everywhere so even 0.001 FRG changes show.
+// fmt() uses toFixed(1)K which requires 100 HASH change before display updates (1000s at 0.1 HASH/s).
+// fmtLive uses toFixed(3) everywhere so even 0.001 HASH changes show.
 function fmtLive(n){ if(n>=1e9)return(n/1e9).toFixed(3)+"B"; if(n>=1e6)return(n/1e6).toFixed(3)+"M"; if(n>=1e3)return(n/1e3).toFixed(3)+"K"; return n.toFixed(3); }
 function calcEffectiveRate(upgObj={},purchased=[]){
   const upgradeBonus=UPGRADES.reduce((a,u)=>a+u.rateBonus*((upgObj[u.id]||upgObj[String(u.id)])||0),0);
@@ -422,13 +422,13 @@ function LegacyModal({onClose,onMine}){
               <div className="oct-opp" style={{background:'linear-gradient(135deg,rgba(232,184,75,.1),rgba(201,122,26,.06))',border:'1.5px solid rgba(232,184,75,.28)'}}>
                 <div className="oo-icon">⛏</div>
                 <div className="oo-title" style={{color:'var(--green)'}}>Now It Is Your Turn</div>
-                <div className="oo-sub" style={{color:'var(--tx3)'}}>Every project above started with zero users and zero value.<br/>Forge FRG mining is live. Early miners have always won — this is no different.</div>
+                <div className="oo-sub" style={{color:'var(--tx3)'}}>Every project above started with zero users and zero value.<br/>Hasha HASH mining is live. Early miners have always won — this is no different.</div>
                 <div className="oo-stats">
-                  <div className="oos"><div className="oos-v" style={{color:'var(--green)'}}>1B</div><div className="oos-l">FRG SUPPLY</div></div>
+                  <div className="oos"><div className="oos-v" style={{color:'var(--green)'}}>1B</div><div className="oos-l">HASH SUPPLY</div></div>
                   <div className="oos"><div className="oos-v" style={{color:'var(--green)'}}>40%</div><div className="oos-l">MINING SHARE</div></div>
                   <div className="oos"><div className="oos-v" style={{color:'var(--green)'}}>FREE</div><div className="oos-l">TO MINE</div></div>
                 </div>
-                <button className="oo-cta" style={{background:'var(--green)'}} onClick={()=>{onClose();onMine?.();}}>▶ START MINING FRG</button>
+                <button className="oo-cta" style={{background:'var(--green)'}} onClick={()=>{onClose();onMine?.();}}>▶ START MINING HASH</button>
               </div>
             )}
           </div>
@@ -577,7 +577,7 @@ function PurchaseModal({item,onConfirm,onClose}){
           {/* Features */}
           <div style={{display:'flex',flexDirection:'column',gap:7,marginBottom:14}}>
             {(isLifetime?['Mine 24/7 — even when app is closed','Full rate × all your upgrades','Permanent — pay once, earn forever','Activates within seconds']:
-              isAutoMine?['Earns FRG while you sleep','Full mining rate applied','Works with all upgrades','Easy to upgrade to Lifetime']:
+              isAutoMine?['Earns HASH while you sleep','Full mining rate applied','Works with all upgrades','Easy to upgrade to Lifetime']:
               isBoost?['Multiplies your current mining rate','Stacks with all node upgrades','Activates immediately on tap','Your balance keeps all earnings']:
               ['Activates immediately','Stacks with all upgrades','Permanent upgrade','Counts toward leaderboard']
             ).map((f,i)=>(
@@ -782,11 +782,11 @@ function SecurityCircle({onShowToast}){
             filledSlots<5&&<button onClick={()=>setAdding(true)} style={{width:'100%',padding:'8px',marginBottom:10,borderRadius:8,border:'1px dashed rgba(91,168,232,.28)',background:'transparent',color:'#5096ff',fontFamily:'var(--f)',fontSize:9,cursor:'pointer'}}>＋ Invite someone to your circle</button>
           )}
           <div className="sc-benefits">
-            {[`+${trustScore}% trust score — boosts FRG allocation at listing`,`${trustedCount} verified contacts protect your account`,`Full circle (5/5) = eligible for Genesis airdrop tier`,`Higher trust = priority in early token distribution`].map((b,i)=>(
+            {[`+${trustScore}% trust score — boosts HASH allocation at listing`,`${trustedCount} verified contacts protect your account`,`Full circle (5/5) = eligible for Genesis airdrop tier`,`Higher trust = priority in early token distribution`].map((b,i)=>(
               <div key={i} className="sc-benefit"><div className="sc-benefit-dot" style={{background:i<trustedCount?'#5096ff':'var(--br)'}}/><span style={{color:i<trustedCount?'var(--tx2)':'var(--tx3)'}}>{b}</span></div>
             ))}
           </div>
-          <div className="sc-info-box">◈ Each verified contact adds to your trust score and helps protect the FRG network from fake accounts. Higher trust score = larger FRG allocation at token listing.</div>
+          <div className="sc-info-box">◈ Each verified contact adds to your trust score and helps protect the HASH network from fake accounts. Higher trust score = larger HASH allocation at token listing.</div>
         </>
       )}
 
@@ -1085,11 +1085,11 @@ function HalvingSection({ totalUsers = 0, effectiveRate = 0.1 }) {
             <div style={{marginTop:10,padding:'10px 12px',borderRadius:8,background:'rgba(232,184,75,.05)',border:'1px solid rgba(232,184,75,.15)'}}>
               <div style={{fontFamily:'var(--f)',fontSize:8,color:'var(--green)',letterSpacing:'.08em',marginBottom:6}}>WHAT THIS MEANS FOR YOU</div>
               <div style={{fontFamily:'var(--f)',fontSize:10,color:'var(--tx)',lineHeight:1.6}}>
-                Your current rate: <span style={{color:epoch.color,fontWeight:700}}>{effectiveRate.toFixed(3)} FRG/s</span>
+                Your current rate: <span style={{color:epoch.color,fontWeight:700}}>{effectiveRate.toFixed(3)} HASH/s</span>
               </div>
               {nextEpoch && (
                 <div style={{fontFamily:'var(--f)',fontSize:10,color:'var(--tx3)',marginTop:3,lineHeight:1.6}}>
-                  After next halving: <span style={{color:'var(--red)',fontWeight:700}}>{(effectiveRate * nextEpoch.rate / epoch.rate).toFixed(3)} FRG/s</span>
+                  After next halving: <span style={{color:'var(--red)',fontWeight:700}}>{(effectiveRate * nextEpoch.rate / epoch.rate).toFixed(3)} HASH/s</span>
                   <span style={{color:'var(--tx3)'}}> (−50%)</span>
                 </div>
               )}
@@ -1201,7 +1201,7 @@ function NodeIdentityCard({ upgrades={}, purchased={}, effectiveRate=0.1, mining
         {/* Rate display */}
         <div style={{textAlign:'right',flexShrink:0}}>
           <div style={{fontFamily:'var(--f)',fontSize:16,fontWeight:700,color:t.color,lineHeight:1,filter:mining?`drop-shadow(0 0 8px ${t.color}50)`:undefined}}>{effectiveRate.toFixed(2)}</div>
-          <div style={{fontFamily:'var(--f)',fontSize:8,color:'var(--tx3)'}}>FRG/SEC</div>
+          <div style={{fontFamily:'var(--f)',fontSize:8,color:'var(--tx3)'}}>HASH/SEC</div>
           {hasPerm&&<div style={{fontFamily:'var(--f)',fontSize:7,color:'#c07cf0',marginTop:3}}>2× CORE</div>}
           {hasAuto&&<div style={{fontFamily:'var(--f)',fontSize:7,color:'var(--green)',marginTop:1}}>AUTO ●</div>}
         </div>
@@ -1225,7 +1225,7 @@ function WalletRewardCard({ connected=false, claimed=false, onConnect }) {
             <span style={{fontFamily:'var(--f)',fontSize:8,background:'rgba(91,168,232,.15)',color:'#5096ff',border:'1px solid rgba(91,168,232,.3)',borderRadius:4,padding:'1px 6px'}}>ONE-TIME</span>
           </div>
           <div style={{fontFamily:'var(--f)',fontSize:9,color:'var(--tx3)',lineHeight:1.5}}>
-            Connect your TON wallet and receive <span style={{color:'#5096ff',fontWeight:700}}>+10,000 FRG</span> instantly + Verified Miner badge.
+            Connect your TON wallet and receive <span style={{color:'#5096ff',fontWeight:700}}>+10,000 HASH</span> instantly + Verified Miner badge.
           </div>
         </div>
         <button onClick={onConnect} style={{flexShrink:0,padding:'8px 14px',borderRadius:8,background:'rgba(91,168,232,.15)',border:'1px solid rgba(91,168,232,.4)',color:'#5096ff',fontFamily:'var(--f)',fontSize:9,fontWeight:700,cursor:'pointer',letterSpacing:'.06em',whiteSpace:'nowrap'}}>
@@ -1328,7 +1328,7 @@ function HalvingDropdown({effectiveRate, totalUsers, onInvite}){
           <div style={{padding:'14px 20px',background:'rgba(255,50,50,.03)',borderBottom:'1px solid rgba(255,255,255,.04)'}}>
             <div style={{fontSize:12,fontWeight:700,color:'#fff',marginBottom:5}}>Everyone's mining rate halves — not your balance</div>
             <div style={{fontSize:11,color:'rgba(255,255,255,.35)',lineHeight:1.65}}>
-              <span style={{color:'rgba(0,195,123,.9)',fontWeight:700}}>Your earned FRG balance is always safe</span> — halving never touches it. Only your <span style={{color:'#fff',fontWeight:600}}>future earning rate</span> halves when the next user milestone is hit. This affects every miner equally — base rate, upgrades, and auto-mine all halve together.
+              <span style={{color:'rgba(0,195,123,.9)',fontWeight:700}}>Your earned HASH balance is always safe</span> — halving never touches it. Only your <span style={{color:'#fff',fontWeight:600}}>future earning rate</span> halves when the next user milestone is hit. This affects every miner equally — base rate, upgrades, and auto-mine all halve together.
             </div>
           </div>
 
@@ -1382,11 +1382,11 @@ function HalvingDropdown({effectiveRate, totalUsers, onInvite}){
             <div style={{fontSize:9,fontWeight:600,color:'rgba(255,255,255,.2)',letterSpacing:'.1em',textTransform:'uppercase',marginBottom:8}}>Everything that halves</div>
             <div style={{display:'flex',flexDirection:'column',gap:6}}>
               {[
-                {e:'⛏',t:'Base mining rate',d:'0.1 FRG/s base halves for everyone'},
+                {e:'⛏',t:'Base mining rate',d:'0.1 HASH/s base halves for everyone'},
                 {e:'◈',t:'All upgrade bonuses',d:'Neural Boost, Plasma Array — all halved'},
-                {e:'⬡',t:'Block rewards',d:'FRG earned per block found → halved'},
+                {e:'⬡',t:'Block rewards',d:'HASH earned per block found → halved'},
                 {e:'⏱',t:'Block time +50%',d:'Harder to find blocks after each halving'},
-                {e:'🔒',t:'Your balance — always safe',d:'Earned FRG is yours forever, halving never touches it'},
+                {e:'🔒',t:'Your balance — always safe',d:'Earned HASH is yours forever, halving never touches it'},
               ].map((p,i)=>(
                 <div key={i} style={{display:'flex',alignItems:'center',gap:10,padding:'7px 10px',background:'rgba(255,255,255,.02)',borderRadius:6,border:'1px solid rgba(255,255,255,.04)'}}>
                   <span style={{fontSize:15,flexShrink:0}}>{p.e}</span>
@@ -1401,7 +1401,7 @@ function HalvingDropdown({effectiveRate, totalUsers, onInvite}){
             <div style={{flex:1,padding:'10px',background:'rgba(0,195,123,.05)',border:'1px solid rgba(0,195,123,.12)',borderRadius:7}}>
               <div style={{fontSize:9,color:'rgba(0,195,123,.6)',fontWeight:600,letterSpacing:'.06em',textTransform:'uppercase',marginBottom:4}}>Your rate now</div>
               <div style={{fontSize:18,fontWeight:800,color:'#00c37b',fontFamily:"'SF Mono',monospace"}}>{effectiveRate.toFixed(3)}</div>
-              <div style={{fontSize:9,color:'rgba(255,255,255,.2)',marginTop:1}}>FRG/s</div>
+              <div style={{fontSize:9,color:'rgba(255,255,255,.2)',marginTop:1}}>HASH/s</div>
             </div>
             <div style={{display:'flex',alignItems:'center',justifyContent:'center',width:24,flexShrink:0}}>
               <svg width="14" height="14" viewBox="0 0 14 14"><path d="M3 7h8M8 4l3 3-3 3" stroke="rgba(255,255,255,.2)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -1409,7 +1409,7 @@ function HalvingDropdown({effectiveRate, totalUsers, onInvite}){
             <div style={{flex:1,padding:'10px',background:'rgba(255,77,77,.05)',border:'1px solid rgba(255,77,77,.12)',borderRadius:7}}>
               <div style={{fontSize:9,color:'rgba(255,77,77,.6)',fontWeight:600,letterSpacing:'.06em',textTransform:'uppercase',marginBottom:4}}>After next halving</div>
               <div style={{fontSize:18,fontWeight:800,color:'#ff4d4d',fontFamily:"'SF Mono',monospace"}}>{(effectiveRate/2).toFixed(3)}</div>
-              <div style={{fontSize:9,color:'rgba(255,255,255,.2)',marginTop:1}}>FRG/s</div>
+              <div style={{fontSize:9,color:'rgba(255,255,255,.2)',marginTop:1}}>HASH/s</div>
             </div>
           </div>
 
@@ -1439,13 +1439,13 @@ function NodeExpandable({t,r,g,b,mining,effectiveRate,hasAutoMine,automineRemDay
             {mining&&<div style={{width:5,height:5,borderRadius:'50%',background:'var(--green)',animation:'sdot 2s infinite',flexShrink:0}}/>}
           </div>
           <div style={{fontSize:11,color:'var(--tx3)',fontWeight:500}}>
-            {activeModules}/5 modules · {hasAutoMine&&<span style={{color:'var(--green)'}}>auto-mine{automineRemDays===null?' ∞':` ${automineRemDays}d`} · </span>}{purchased['speed_perm']&&<span style={{color:'#b464ff'}}>2× core · </span>}{effectiveRate.toFixed(3)} FRG/s
+            {activeModules}/5 modules · {hasAutoMine&&<span style={{color:'var(--green)'}}>auto-mine{automineRemDays===null?' ∞':` ${automineRemDays}d`} · </span>}{purchased['speed_perm']&&<span style={{color:'#b464ff'}}>2× core · </span>}{effectiveRate.toFixed(3)} HASH/s
           </div>
         </div>
         <div style={{display:'flex',alignItems:'center',gap:8,flexShrink:0}}>
           <div style={{textAlign:'right'}}>
             <div style={{fontSize:20,fontWeight:800,color:mining?'var(--green)':'var(--tx)',lineHeight:1,transition:'color .5s'}}>{effectiveRate.toFixed(2)}</div>
-            <div style={{fontSize:9,color:'var(--tx3)',fontWeight:600,letterSpacing:'.06em',textTransform:'uppercase'}}>FRG/s</div>
+            <div style={{fontSize:9,color:'var(--tx3)',fontWeight:600,letterSpacing:'.06em',textTransform:'uppercase'}}>HASH/s</div>
           </div>
           <span style={{fontSize:12,color:'var(--tx3)',transition:'transform .2s',display:'inline-block',transform:open?'rotate(180deg)':'none'}}>▾</span>
         </div>
@@ -1531,12 +1531,12 @@ export default function App(){
   const [tick,setTick]=useState(false);
   const [rateH,setRateH]=useState([]);
   const [balH,setBalH]=useState([]);
-  const [log,setLog]=useState([{t:'00:00',type:'info',msg:'Forge node initialized. Ready.'}]);
+  const [log,setLog]=useState([{t:'00:00',type:'info',msg:'Hasha node initialized. Ready.'}]);
   const [circleMembers,setCircleMembers]=useState([]);
   const [lbData,setLbData]=useState(null);
   const [totalUsers,setTotalUsers]=useState(null);
   // Feature states
-  const [walletBonusClaimed,setWalletBonusClaimed]=useState(()=>!!localStorage.getItem('forge_wallet_bonus'));
+  const [walletBonusClaimed,setWalletBonusClaimed]=useState(()=>!!localStorage.getItem('hasha_wallet_bonus'));
 const [coolingWarning,setCoolingWarning]=useState(false);
   const [lastActiveAt,setLastActiveAt]=useState(()=>Number(localStorage.getItem('forge_last_active'))||Date.now());
   const [storeTab,setStoreTab]=useState('all');
@@ -1637,7 +1637,7 @@ const [coolingWarning,setCoolingWarning]=useState(false);
 
         // If new user (DB was wiped), clear all local state
         if (loginResult.isNewUser) {
-          localStorage.removeItem('forge_wallet_bonus');
+          localStorage.removeItem('hasha_wallet_bonus');
 localStorage.removeItem('forge_last_active');
           localStorage.removeItem('forge_legacy_seen');
           // Clear TonConnect's own localStorage keys manually
@@ -1765,7 +1765,7 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                 blocks:       typeof offline.blocks_found === 'number' ? offline.blocks_found : c.blocks,
                 sessionStart: Date.now(), // claimOffline reset mining_start to NOW() on server
               }));
-              showToast('🤖','Auto-Mine Earnings',`+${fmt(offline.earned)} FRG while offline`);
+              showToast('🤖','Auto-Mine Earnings',`+${fmt(offline.earned)} HASH while offline`);
             }
           }catch(e){ console.error('Claim offline error:', e); }
         }
@@ -1784,7 +1784,7 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
           const walletData = await api.wallet.getWallet();
           if(walletData.bonusClaimed){
             setWalletBonusClaimed(true);
-            localStorage.setItem('forge_wallet_bonus','1');
+            localStorage.setItem('hasha_wallet_bonus','1');
           }
         }catch(e){}
       }
@@ -1823,9 +1823,9 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
       // Grant bonus balance (frontend-side for now, backend wires this later)
       setCommitted(c => ({ ...c, balance: c.balance + 10000, totalMined: c.totalMined + 10000 }));
       setWalletBonusClaimed(true);
-      localStorage.setItem('forge_wallet_bonus','1');
-      showToast('💎','Wallet Verified!','+10,000 FRG credited to your node');
-      addLog('info','💎 TON wallet verified — +10,000 FRG bonus');
+      localStorage.setItem('hasha_wallet_bonus','1');
+      showToast('💎','Wallet Verified!','+10,000 HASH credited to your node');
+      addLog('info','💎 TON wallet verified — +10,000 HASH bonus');
     }
   },[userFriendlyAddress,walletBonusClaimed,showToast,addLog]);
 
@@ -1885,10 +1885,10 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
         showToast('🔥','5× TURBO Active!','90 seconds · paid');
         addLog('info','🔥 Paid TURBO activated');
       } else if(item.type==='chest'){
-        // Chest: FRG credited, not added to purchased
+        // Chest: HASH credited, not added to purchased
         if(typeof res.newBalance==='number') setCommitted(c => ({ ...c, balance: res.newBalance }));
-        showToast('📦',`+${res.frgCredited?.toLocaleString()||''} FRG`,`Head Start credited!`);
-        addLog('info',`📦 ${item.name}: +${res.frgCredited} FRG`);
+        showToast('📦',`+${res.frgCredited?.toLocaleString()||''} HASH`,`Head Start credited!`);
+        addLog('info',`📦 ${item.name}: +${res.frgCredited} HASH`);
       } else if(res.expiresAt){
         // Expirable item (auto_7d, auto_30d, speed_3x etc)
         setPurch(p=>({...p,[item.id]:true}));
@@ -2065,11 +2065,11 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
 
   // Activity log
   useEffect(()=>{
-    if(mining&&!prevMining.current)addLog('pos',`▶ STARTED — ${effectiveRate.toFixed(3)} FRG/s`);
+    if(mining&&!prevMining.current)addLog('pos',`▶ STARTED — ${effectiveRate.toFixed(3)} HASH/s`);
     else if(!mining&&prevMining.current&&sessE>0)addLog('neg',`■ STOPPED — earned ${fmt(sessE)}`);
     prevMining.current=mining;
   },[mining]);
-  useEffect(()=>{if(blocks>prevBlocks.current){addLog('blk',`⬡ BLOCK — +${fmt(effectiveRate*12)} FRG`);prevBlocks.current=blocks;}},[blocks]);
+  useEffect(()=>{if(blocks>prevBlocks.current){addLog('blk',`⬡ BLOCK — +${fmt(effectiveRate*12)} HASH`);prevBlocks.current=blocks;}},[blocks]);
 
   // Boost countdown
   useEffect(()=>{
@@ -2148,7 +2148,7 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
         }
 
         if(tab==='mine' && state.offlineEarnings>0){
-          showToast('🤖','Auto-Mine Earnings',`+${fmt(state.offlineEarnings)} FRG offline`);
+          showToast('🤖','Auto-Mine Earnings',`+${fmt(state.offlineEarnings)} HASH offline`);
         }
       } catch (e) {
         console.error('Tab refresh mining state error:', e);
@@ -2273,7 +2273,7 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
     try{
       const res=await api.referrals.claimTier(tier.refs);
       console.log('Referral reward claimed:', res);
-      // Apply FRG bonus to balance
+      // Apply HASH bonus to balance
       if(typeof res.frg==='number'){ setCommitted(c => ({ ...c, balance: c.balance + res.frg, totalMined: c.totalMined + res.frg })); }
       // Refresh mining state from server so automine/speed/perm flags are live
       try{
@@ -2296,10 +2296,10 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
       }catch(e){ console.error('State refresh error:',e); }
     }catch(e){ console.error('Claim tier error:',e); }
     // Particle only — balance already updated from res.frg above (don't add twice)
-    const octMatch = tier.subReward.replace(/,/g,'').match(/\+?(\d+)\s*FRG/);
+    const octMatch = tier.subReward.replace(/,/g,'').match(/\+?(\d+)\s*HASH/);
     if(octMatch){
       const octBonus=parseInt(octMatch[1]);
-      addParticle({x:window.innerWidth*.5,y:window.innerHeight*.38,label:`+${fmt(octBonus)} FRG`});
+      addParticle({x:window.innerWidth*.5,y:window.innerHeight*.38,label:`+${fmt(octBonus)} HASH`});
     }
     showToast(tier.icon,`${tier.reward} ACTIVATED!`,tier.subReward);
     setRewardPopup(null);
@@ -2322,7 +2322,7 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
     // causing a visible drop. Instead, wait for the server to confirm and set it once.
     setMP(p=>p+reward);
     addParticle({x:window.innerWidth*.5,y:window.innerHeight*.4,label:`+${fmt(reward)}`});
-    showToast('✅',`+${fmt(reward)} FRG`,'Checkpoint claimed!');
+    showToast('✅',`+${fmt(reward)} HASH`,'Checkpoint claimed!');
     try{
       const res=await api.missions.claimCheckpoint(mId,cpIdx);
       console.log('Mission checkpoint claimed:', res);
@@ -2418,7 +2418,7 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
           <div className="topbar">
             <div className="tb-balance-center">
               <div className="tb-bal-amt">{fmtLive(liveBalance)}</div>
-              <div className="tb-bal-unit">FRG</div>
+              <div className="tb-bal-unit">HASH</div>
             </div>
           </div>
         )}
@@ -2495,7 +2495,7 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
 
               {/* ── STICKY LOGO BAR ── */}
               <div style={{position:'sticky',top:0,zIndex:200,background:'rgba(0,0,0,.96)',backdropFilter:'blur(20px)',WebkitBackdropFilter:'blur(20px)',display:'flex',justifyContent:'center',alignItems:'center',padding:'8px 0',borderBottom:'1px solid rgba(255,255,255,.04)'}}>
-                <img src="/forge-logo.png" style={{width:30,height:30,borderRadius:8,objectFit:'cover'}} alt="Forge"/>
+                <img src="/hasha-logo.png" style={{width:30,height:30,borderRadius:8,objectFit:'cover'}} alt="Hasha"/>
               </div>
 
               {/* ── WALLET POPUP — centered modal ── */}
@@ -2534,7 +2534,7 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                     ):(
                       <button onClick={()=>tonConnectUI.connectWallet().catch(()=>{})} style={{width:'100%',height:'100%',display:'flex',alignItems:'center',gap:10,padding:'6px 12px',borderRadius:8,background:'rgba(255,255,255,.03)',border:'1px solid rgba(255,255,255,.06)',cursor:'pointer',WebkitTapHighlightColor:'transparent',boxSizing:'border-box'}}>
                         <span style={{flex:1,fontSize:11,color:'rgba(255,255,255,.22)',fontWeight:500,textAlign:'left'}}>Connect Wallet</span>
-                        {!walletBonusClaimed&&<span style={{fontSize:10,fontWeight:700,color:'#5096ff',background:'rgba(80,150,255,.07)',borderRadius:5,padding:'2px 8px',flexShrink:0}}>+10K FRG</span>}
+                        {!walletBonusClaimed&&<span style={{fontSize:10,fontWeight:700,color:'#5096ff',background:'rgba(80,150,255,.07)',borderRadius:5,padding:'2px 8px',flexShrink:0}}>+10K HASH</span>}
                       </button>
                     )}
                   </div>
@@ -2579,13 +2579,13 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                     <line x1="100" y1="8" x2="100" y2="26" stroke="#fff" strokeWidth=".5"/>
                     <line x1="100" y1="62" x2="100" y2="80" stroke="#fff" strokeWidth=".5"/>
                   </svg>
-                  <div style={{fontSize:10,fontWeight:600,color:'rgba(255,255,255,.18)',letterSpacing:'.16em',textTransform:'uppercase',marginBottom:6}}>FRG Balance</div>
+                  <div style={{fontSize:10,fontWeight:600,color:'rgba(255,255,255,.18)',letterSpacing:'.16em',textTransform:'uppercase',marginBottom:6}}>HASH Balance</div>
                   <div className={`bal-amount${tick?' tick':''}`} style={{fontSize:'clamp(58px,15vw,76px)',fontWeight:700,color:'rgba(255,255,255,.88)',lineHeight:1,letterSpacing:'-.04em',marginBottom:8}}>{fmtLive(liveBalance)}</div>
                   <div style={{height:22,display:'flex',alignItems:'center',justifyContent:'center'}}>
                     {mining
                       ?<div style={{display:'inline-flex',alignItems:'center',gap:5,padding:'4px 12px',borderRadius:100,background:'rgba(0,195,123,.07)',border:'1px solid rgba(0,195,123,.13)'}}>
                          <div style={{width:5,height:5,borderRadius:'50%',background:'#00c37b',animation:'sdot .9s infinite',flexShrink:0}}/>
-                         <span style={{fontSize:12,fontWeight:700,color:'#00c37b'}}>+{effectiveRate.toFixed(4)} FRG/s</span>
+                         <span style={{fontSize:12,fontWeight:700,color:'#00c37b'}}>+{effectiveRate.toFixed(4)} HASH/s</span>
                          {activeBoost&&<span style={{fontSize:10,color:'#ffc100',fontWeight:700}}>⚡{activeBoost.rem}s</span>}
                        </div>
                       :<span style={{fontSize:11,color:'rgba(255,255,255,.14)'}}>Tap below to start</span>}
@@ -2720,11 +2720,11 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                         ):!Object.values(upgrades).some(v=>v>0)?(
                           <>
                             <div style={{fontSize:12,fontWeight:700,color:'rgba(255,255,255,.7)',marginBottom:1}}>Boost your mining rate</div>
-                            <div style={{fontSize:10,color:'rgba(255,255,255,.25)'}}>Upgrades multiply your FRG/s</div>
+                            <div style={{fontSize:10,color:'rgba(255,255,255,.25)'}}>Upgrades multiply your HASH/s</div>
                           </>
                         ):(
                           <>
-                            <div style={{fontSize:12,fontWeight:700,color:'rgba(255,255,255,.7)',marginBottom:1}}>+{effectiveRate.toFixed(4)} FRG/s running</div>
+                            <div style={{fontSize:12,fontWeight:700,color:'rgba(255,255,255,.7)',marginBottom:1}}>+{effectiveRate.toFixed(4)} HASH/s running</div>
                             <div style={{fontSize:10,color:'rgba(255,255,255,.25)'}}>Invite friends to earn 10% of their mining</div>
                           </>
                         )}
@@ -2905,7 +2905,7 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                   </div>
                       <div style={{flex:1}}>
                         <div style={{fontSize:13,fontWeight:700,color:'#fff',marginBottom:1}}>Security Circle</div>
-                        <div style={{fontSize:10,color:'rgba(255,255,255,.22)'}}>Verify contacts · boost your FRG allocation</div>
+                        <div style={{fontSize:10,color:'rgba(255,255,255,.22)'}}>Verify contacts · boost your HASH allocation</div>
                       </div>
                       <div style={{textAlign:'center',background:'rgba(255,255,255,.04)',borderRadius:6,padding:'4px 9px',flexShrink:0}}>
                         <div style={{fontSize:16,fontWeight:800,color:'#fff',lineHeight:1}}>{Math.round((circleMembers.filter(m=>m.trusted).length/5)*100)}</div>
@@ -2955,7 +2955,7 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                       <div style={{display:'flex',gap:8}}><span style={{color:'rgba(255,255,255,.12)',width:46,flexShrink:0}}>H/s</span><span style={{color:'#00c37b',fontWeight:700}}>{(effectiveRate*1000).toFixed(0)}</span></div>
                     </div>
                     <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:5}}>
-                      {[{l:'Session',v:fmt(sessE),c:'#00c37b'},{l:'Net Hash',v:`${netHash.toFixed(1)} TH`,c:'#b464ff'},{l:'Node ID',v:'FRG-A7F3',c:'#5096ff'},{l:'Blocks',v:blocks,c:'rgba(255,255,255,.7)'}].map((m,i)=>(
+                      {[{l:'Session',v:fmt(sessE),c:'#00c37b'},{l:'Net Hash',v:`${netHash.toFixed(1)} TH`,c:'#b464ff'},{l:'Node ID',v:'HSH-A7F3',c:'#5096ff'},{l:'Blocks',v:blocks,c:'rgba(255,255,255,.7)'}].map((m,i)=>(
                         <div key={i} style={{padding:'6px 8px',background:'rgba(255,255,255,.025)',borderRadius:5,border:'1px solid rgba(255,255,255,.04)'}}>
                           <div style={{fontSize:8,fontWeight:600,color:'rgba(255,255,255,.14)',letterSpacing:'.07em',textTransform:'uppercase',marginBottom:2}}>{m.l}</div>
                           <div style={{fontFamily:"'SF Mono',monospace",fontSize:11,fontWeight:700,color:m.c}}>{m.v}</div>
@@ -3045,7 +3045,7 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                     <circle cx='77' cy='8' r='3' fill='#00c37b' opacity='.8'/>
                     <ellipse cx='77' cy='8' rx='5' ry='4' fill='#00c37b' opacity='.2'/>
                   </svg>
-                  <div style={{fontSize:11,fontWeight:600,color:'rgba(255,255,255,.18)',letterSpacing:'.14em',textTransform:'uppercase',marginBottom:3}}>Forge Store</div>
+                  <div style={{fontSize:11,fontWeight:600,color:'rgba(255,255,255,.18)',letterSpacing:'.14em',textTransform:'uppercase',marginBottom:3}}>Hasha Store</div>
                   <div style={{fontSize:22,fontWeight:800,color:'#fff',letterSpacing:'-.02em'}}>Upgrade Your Node</div>
                 </div>
 
@@ -3173,7 +3173,7 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                             <div style={{display:'flex',gap:2,marginBottom:6}}>
                               {Array.from({length:u.maxLevel},(_,i)=><div key={i} style={{height:2,flex:1,borderRadius:1,background:i<lv?u.color:'rgba(255,255,255,.08)'}}/>)}
                             </div>
-                            <div style={{fontSize:10,fontWeight:700,color:maxed?'#00c37b':can?'#00c37b':'rgba(255,77,77,.7)'}}>{maxed?'Maxed':fmt(cost)+' FRG'}</div>
+                            <div style={{fontSize:10,fontWeight:700,color:maxed?'#00c37b':can?'#00c37b':'rgba(255,77,77,.7)'}}>{maxed?'Maxed':fmt(cost)+' HASH'}</div>
                           </div>
                         );
                       })}
@@ -3308,7 +3308,7 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                       </div>
                       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8,marginBottom:20}}>
                         {[
-                          {v:fmt(referralEarnings||simRefs*5000),l:'FRG earned',c:'#00c37b'},
+                          {v:fmt(referralEarnings||simRefs*5000),l:'HASH earned',c:'#00c37b'},
                           {v:'10%',l:'Passive forever',c:'#5096ff'},
                           {v:simRefs>0?`#${lbData?.yourRank||'—'}` :'—',l:'Your rank',c:'rgba(255,255,255,.5)'},
                         ].map((s,i)=>(
@@ -3331,13 +3331,13 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                           const link=`https://t.me/${import.meta.env.VITE_BOT_URL?.replace('https://t.me/','') || 'forgedemobot'}?start=ref_${refCode}`;
                           navigator.clipboard?.writeText(link).catch(()=>{});
                           setCopied(true);setTimeout(()=>setCopied(false),2500);
-                          showToast('📋','Link Copied!','Share it to earn FRG');
+                          showToast('📋','Link Copied!','Share it to earn HASH');
                         }} style={{flex:1,padding:'9px',borderRadius:8,background:'rgba(255,255,255,.05)',border:'1px solid rgba(255,255,255,.08)',color:copied?'#00c37b':'rgba(255,255,255,.4)',fontSize:11,fontWeight:600,cursor:'pointer',transition:'color .2s'}}>
                           {copied?'✓ Copied':'Copy Link'}
                         </button>
                         <button onClick={()=>{
                           const link=`https://t.me/${import.meta.env.VITE_BOT_URL?.replace('https://t.me/','') || 'forgedemobot'}?start=ref_${refCode}`;
-                          const text=encodeURIComponent(`⛏ Mine FRG with me on Forge — early miners earn the most before the next halving!\n\n${link}`);
+                          const text=encodeURIComponent(`⛏ Mine HASH with me on Hasha — early miners earn the most before the next halving!\n\n${link}`);
                           window.Telegram?.WebApp?.openTelegramLink?.(`https://t.me/share/url?url=${link}&text=${text}`);
                         }} style={{flex:1,padding:'9px',borderRadius:8,background:'#00c37b',border:'none',color:'#000',fontSize:11,fontWeight:700,cursor:'pointer'}}>
                           Share on Telegram
@@ -3362,7 +3362,7 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                         <ellipse cx='65' cy='87' rx='18' ry='3' fill='#00c37b' opacity='.08'/>
                       </svg>
                       <div style={{fontSize:11,fontWeight:700,color:'#fff',marginBottom:6}}>Each friend you invite gives you:</div>
-                      {[['⚡','5,000 FRG','Instant when they join'],['♾️','10% of everything they mine','Passive, forever'],['📈','Higher halving milestone','More users = scarcer FRG']].map((r,i)=>(
+                      {[['⚡','5,000 HASH','Instant when they join'],['♾️','10% of everything they mine','Passive, forever'],['📈','Higher halving milestone','More users = scarcer HASH']].map((r,i)=>(
                         <div key={i} style={{display:'flex',gap:8,alignItems:'center',marginBottom:i<2?6:0}}>
                           <span style={{fontSize:13,flexShrink:0}}>{r[0]}</span>
                           <span style={{fontSize:11,fontWeight:700,color:'#00c37b'}}>{r[1]}</span>
@@ -3469,7 +3469,7 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                             <div style={{fontSize:12,fontWeight:600,color:'#fff',marginBottom:1}}>{f.name||`User ${f.id}`}</div>
                             <div style={{fontSize:10,color:'rgba(255,255,255,.22)'}}>Joined {new Date(f.joined_at).toLocaleDateString()}</div>
                           </div>
-                          <div style={{fontSize:11,fontWeight:700,color:'#00c37b',flexShrink:0}}>+{fmt(f.total_mined*0.1)} FRG</div>
+                          <div style={{fontSize:11,fontWeight:700,color:'#00c37b',flexShrink:0}}>+{fmt(f.total_mined*0.1)} HASH</div>
                         </div>
                       );
                     })}
@@ -3478,7 +3478,7 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                       window.Telegram?.WebApp?.openTelegramLink?.(`https://t.me/share/url?url=${link}`);
                     }} style={{padding:'12px 20px',display:'flex',alignItems:'center',gap:11,cursor:'pointer',WebkitTapHighlightColor:'transparent'}}>
                       <div style={{width:34,height:34,borderRadius:'50%',border:'1px dashed rgba(255,255,255,.12)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:16,color:'#00c37b',flexShrink:0}}>+</div>
-                      <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:'#00c37b'}}>Invite a friend</div><div style={{fontSize:10,color:'rgba(255,255,255,.22)'}}>Earn 5,000 FRG per invite</div></div>
+                      <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:'#00c37b'}}>Invite a friend</div><div style={{fontSize:10,color:'rgba(255,255,255,.22)'}}>Earn 5,000 HASH per invite</div></div>
                       <span style={{fontSize:14,color:'rgba(255,255,255,.18)'}}>›</span>
                     </div>
                   </div>
@@ -3606,7 +3606,7 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                             {isCurrent&&<div style={{position:'absolute',top:-5,left:'50%',transform:'translateX(-50%)',fontSize:9,color:'#ffc100'}}>▼</div>}
                             <div style={{fontSize:8,fontWeight:700,color:isPast?'rgba(0,195,123,.6)':isCurrent?'#ffc100':'rgba(255,255,255,.2)',marginBottom:2}}>D{i+1}</div>
                             <div style={{fontSize:9,fontWeight:800,color:isPast?'#00c37b':isCurrent?'#ffc100':'rgba(255,255,255,.35)',lineHeight:1}}>{reward>=1000?`${reward/1000}K`:reward}</div>
-                            <div style={{fontSize:7,color:'rgba(255,255,255,.15)',marginTop:1}}>FRG</div>
+                            <div style={{fontSize:7,color:'rgba(255,255,255,.15)',marginTop:1}}>HASH</div>
                             {isPast&&<div style={{position:'absolute',top:3,right:3,fontSize:7,color:'#00c37b'}}>✓</div>}
                           </div>
                         );
@@ -3615,7 +3615,7 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                   </div>
                   <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'8px 10px',background:'rgba(255,193,0,.04)',borderRadius:8,border:'1px solid rgba(255,193,0,.1)'}}>
                     <span style={{fontSize:10,color:'rgba(255,255,255,.3)'}}>Tomorrow's bonus</span>
-                    <span style={{fontSize:11,fontWeight:700,color:'#ffc100'}}>+{([500,1000,2000,3500,5000,8000,12000][Math.min(streak,6)]||12000).toLocaleString()} FRG · Day {streak+1}</span>
+                    <span style={{fontSize:11,fontWeight:700,color:'#ffc100'}}>+{([500,1000,2000,3500,5000,8000,12000][Math.min(streak,6)]||12000).toLocaleString()} HASH · Day {streak+1}</span>
                   </div>
                 </div>
 
@@ -3679,7 +3679,7 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                       art:<svg width="40" height="20" viewBox="0 0 40 20"><polygon points="20,1 23,8 31,8 25,13 27,20 20,16 13,20 15,13 9,8 17,8" fill="#ffc100" opacity=".7"/></svg>},
                     {icon:'node',name:'Blockchain',desc:'3 blocks found',u:blocks>=3,
                       art:<svg width="40" height="20" viewBox="0 0 40 20"><rect x="2" y="5" width="10" height="10" rx="2" fill="#5096ff" opacity=".6"/><rect x="15" y="5" width="10" height="10" rx="2" fill="#5096ff" opacity=".8"/><rect x="28" y="5" width="10" height="10" rx="2" fill="#5096ff"/><line x1="12" y1="10" x2="15" y2="10" stroke="#5096ff" strokeWidth="1.5"/><line x1="25" y1="10" x2="28" y2="10" stroke="#5096ff" strokeWidth="1.5"/></svg>},
-                    {icon:'crystal',name:'Millionaire',desc:'Mined 1M FRG',u:totalMined>=1000000,
+                    {icon:'crystal',name:'Millionaire',desc:'Mined 1M HASH',u:totalMined>=1000000,
                       art:<svg width="40" height="20" viewBox="0 0 40 20"><polygon points="20,2 28,8 25,18 15,18 12,8" fill="#00c37b" opacity=".5"/><polygon points="20,5 26,9 23,16 17,16 14,9" fill="#00c37b" opacity=".8"/><line x1="12" y1="8" x2="28" y2="8" stroke="#00c37b" strokeWidth="1"/></svg>},
                     {icon:'crown',name:'Ref. King',desc:'10 referrals',u:simRefs>=10,
                       art:<svg width="40" height="20" viewBox="0 0 40 20"><polygon points="5,16 5,6 12,12 20,2 28,12 35,6 35,16" fill="#ffc100" opacity=".7"/><rect x="5" y="16" width="30" height="3" rx="1" fill="#ffc100" opacity=".5"/></svg>},
@@ -3777,7 +3777,7 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                     {simRefs>0&&<span style={{fontSize:9,padding:'2px 7px',borderRadius:4,background:'rgba(80,150,255,.08)',color:'#5096ff'}}>👥 {simRefs} REFS</span>}
                   </div>
                   <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:1}}>
-                 {[{v:fmt(liveBalance),l:'Balance'},{v:effectiveRate.toFixed(3),l:'FRG/s'},{v:blocks,l:'Blocks'}].map((s,i)=>(
+                 {[{v:fmt(liveBalance),l:'Balance'},{v:effectiveRate.toFixed(3),l:'HASH/s'},{v:blocks,l:'Blocks'}].map((s,i)=>(
                   <div key={i} style={{padding:'10px 6px',background:'rgba(255,255,255,.03)',borderRadius:i===0?'8px 0 0 8px':i===2?'0 8px 8px 0':'0'}}>
                         <div style={{fontSize:18,fontWeight:800,color:'#fff',lineHeight:1,marginBottom:2}}>{s.v}</div>
                         <div style={{fontSize:9,color:'rgba(255,255,255,.22)',fontWeight:500}}>{s.l}</div>
@@ -3793,9 +3793,9 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                     // spentUpgrades comes from the server (sum of actual upgrade purchase costs),
                     // so it's always accurate regardless of bonus credits inflating the balance.
                     const rows=[
-                      {dot:'#00c37b',l:'Mining & rewards',v:`${fmt(liveTotalMined)} FRG`},
-                      {dot:'#5096ff',l:'Referral income',v:`${fmt(referralEarnings>0?referralEarnings:simRefs*1240)} FRG`,c:'#5096ff'},
-                      ...(spentUpgrades>0?[{dot:'#e05555',l:'Upgrades & boosts',v:`-${fmt(spentUpgrades)} FRG`,c:'#e05555'}]:[]),
+                      {dot:'#00c37b',l:'Mining & rewards',v:`${fmt(liveTotalMined)} HASH`},
+                      {dot:'#5096ff',l:'Referral income',v:`${fmt(referralEarnings>0?referralEarnings:simRefs*1240)} HASH`,c:'#5096ff'},
+                      ...(spentUpgrades>0?[{dot:'#e05555',l:'Upgrades & boosts',v:`-${fmt(spentUpgrades)} HASH`,c:'#e05555'}]:[]),
                     ];
                     return rows.map((r,i)=>(
                       <div key={i} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'7px 0',borderBottom:'1px solid rgba(255,255,255,.04)'}}>
@@ -3809,7 +3809,7 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                   })()}
                   <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 0 0'}}>
                     <span style={{fontSize:12,fontWeight:700,color:'rgba(255,255,255,.5)'}}>Balance</span>
-                    <span style={{fontSize:16,fontWeight:800,color:'#fff'}}>{fmt(liveBalance)} FRG</span>
+                    <span style={{fontSize:16,fontWeight:800,color:'#fff'}}>{fmt(liveBalance)} HASH</span>
                   </div>
                 </div>
 {/* Mission Claims History */}
@@ -3824,7 +3824,7 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                         <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:8}}>
                           <span style={{fontSize:14}}>{m.icon}</span>
                           <span style={{fontSize:12,fontWeight:700,color:'#fff',flex:1}}>{m.name}</span>
-                          {claimedSet.size>0&&<span style={{fontSize:9,fontWeight:700,color:m.color,background:`${m.color}15`,padding:'1px 6px',borderRadius:3}}>+{fmt(totalReward)} FRG</span>}
+                          {claimedSet.size>0&&<span style={{fontSize:9,fontWeight:700,color:m.color,background:`${m.color}15`,padding:'1px 6px',borderRadius:3}}>+{fmt(totalReward)} HASH</span>}
                         </div>
                         <div style={{display:'flex',gap:4}}>
                           {m.checkpoints.map((cp,i)=>{
@@ -3865,7 +3865,7 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                       {v:simRefs,l:'Referrals',art:'#00c37b',shape:'people'},
                       {v:[totalMined>0,blocks>=3,totalMined>=1000000].filter(Boolean).length,l:'Badges',art:'#ffc100',shape:'star'},
                       {v:Object.keys(purchased).length,l:'Purchases',art:'#5096ff',shape:'box'},
-                      {v:fmt(missionPoints),l:'Mission FRG',art:'#b464ff',shape:'bolt'},
+                      {v:fmt(missionPoints),l:'Mission HASH',art:'#b464ff',shape:'bolt'},
                       {v:`${Math.floor(sessT/60)}m`,l:'Session',art:'#00c37b',shape:'clock'},
                     ].map((s,i)=>(
                       <div key={i} style={{padding:'10px',background:'rgba(255,255,255,.03)',borderRadius:8,border:'1px solid rgba(255,255,255,.05)',position:'relative',overflow:'hidden'}}>
@@ -3901,7 +3901,7 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                         console.log('Claiming daily reward');
                         const r=await api.profile.claimDailyReward();
                         console.log('Daily reward claimed:', r);
-                        setCommitted(c => ({ ...c, balance: c.balance + r.reward, totalMined: c.totalMined + r.reward }));if(r.streak) setStreak(r.streak);showToast('🎁',`+${fmt(r.reward)} FRG`,`Day ${r.streak||''} streak!`);
+                        setCommitted(c => ({ ...c, balance: c.balance + r.reward, totalMined: c.totalMined + r.reward }));if(r.streak) setStreak(r.streak);showToast('🎁',`+${fmt(r.reward)} HASH`,`Day ${r.streak||''} streak!`);
                       }
                     }catch(e){console.error('Daily reward error:', e); showToast('🎁','Claim failed','Try again');}
                   }},
@@ -3924,7 +3924,7 @@ if (typeof state.halving_mult === 'number') setHalvingMult(state.halving_mult)
                   </div>
                 ))}
 
-                <div style={{textAlign:'center',padding:'16px 20px',fontSize:9,color:'rgba(255,255,255,.1)',letterSpacing:'.16em'}}>FORGE v1.0 · FRG TOKEN · TON BLOCKCHAIN</div>
+                <div style={{textAlign:'center',padding:'16px 20px',fontSize:9,color:'rgba(255,255,255,.1)',letterSpacing:'.16em'}}>HASHA v1.0 · HASH TOKEN · TON BLOCKCHAIN</div>
               </div>
             </div>
           )}

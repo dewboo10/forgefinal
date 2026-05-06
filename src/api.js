@@ -69,7 +69,7 @@ export const mining = {
   // Get all available upgrades + user levels
   getUpgrades: () => req('GET', '/api/mining/upgrades'),
 
-  // Purchase upgrade with FRG balance
+  // Purchase upgrade with HASH balance
   buyUpgrade: (upgradeId) => req('POST', '/api/mining/upgrades/buy', { upgradeId }),
 }
 
